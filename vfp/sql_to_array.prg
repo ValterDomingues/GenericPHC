@@ -50,11 +50,11 @@ lcConn = "Driver={SQL Server};" + ;
 *==============================================================================
 * >>> INSERT YOUR SQL QUERY HERE <<<
 *------------------------------------------------------------------------------
-* Dynamic naturcst columns come from dytable (entityname=Jorinf_st_naturcst).
-* Prefer the stored procedure (sql/usp_ListObranosNaturcst.sql) so VFP only
-* runs one statement. @Aggregate=0 detail rows; @Aggregate=1 SUM per obra.
+* Full FT / orçamento / custos query; naturcst columns from dytable.
+* Prefer usp_ListFtCustosPorProcesso (sql/usp_ListFtCustosPorProcesso.sql).
+* Replace YOUR_PROCESSO with the processo value (or build lcSql dynamically).
 *==============================================================================
-lcSql = "EXEC dbo.usp_ListObranosNaturcst @Aggregate = 0"
+lcSql = "EXEC dbo.usp_ListFtCustosPorProcesso @mProcesso = N'YOUR_PROCESSO'"
 *==============================================================================
 * End of SQL query section
 *==============================================================================
