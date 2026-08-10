@@ -3,6 +3,7 @@
     - detail rows
     - a subtotal row per u_tipo (campo = 'Total')
     - a blank spacer row after each Total
+    - a grand total row at the bottom (full sum of all valor)
 */
 
 ;WITH custOci AS (
@@ -46,7 +47,8 @@ FROM (
         valor,
         dytablestamp,
         0 AS is_total,
-        u_tipo AS sort_tipo
+        u_tipo AS sort_tipo,
+        0 AS sort_block          -- normal groups
     FROM base
 
     UNION ALL
@@ -58,7 +60,8 @@ FROM (
         SUM(valor) AS valor,
         MAX(dytablestamp) AS dytablestamp,
         1 AS is_total,
-        u_tipo AS sort_tipo
+        u_tipo AS sort_tipo,
+        0 AS sort_block
     FROM base
     GROUP BY u_tipo
 
@@ -71,11 +74,26 @@ FROM (
         CAST(NULL AS decimal(18, 2)) AS valor,
         CAST(NULL AS datetime) AS dytablestamp,
         2 AS is_total,
-        u_tipo AS sort_tipo
+        u_tipo AS sort_tipo,
+        0 AS sort_block
     FROM base
     GROUP BY u_tipo
+
+    UNION ALL
+
+    -- Grand total (full sum of all detail lines)
+    SELECT
+        N'Total Geral' AS u_tipo,
+        N'Total Geral' AS campo,
+        SUM(valor) AS valor,
+        CAST(NULL AS datetime) AS dytablestamp,
+        3 AS is_total,
+        N'' AS sort_tipo,
+        1 AS sort_block          -- force to bottom
+    FROM base
 ) AS resultado
 ORDER BY
+    sort_block,        -- groups first, grand total last
     sort_tipo,
-    is_total,          -- details, Total, then blank
+    is_total,          -- details, Total, blank
     dytablestamp;
