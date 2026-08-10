@@ -50,17 +50,11 @@ lcConn = "Driver={SQL Server};" + ;
 *==============================================================================
 * >>> INSERT YOUR SQL QUERY HERE <<<
 *------------------------------------------------------------------------------
-* Keep this a SELECT that returns the columns you want in the array.
-* Each row becomes one array row; columns map to array columns (2D array).
+* Dynamic naturcst columns come from dytable (entityname=Jorinf_st_naturcst).
+* Prefer the stored procedure (sql/usp_ListObranosNaturcst.sql) so VFP only
+* runs one statement. @Aggregate=0 detail rows; @Aggregate=1 SUM per obra.
 *==============================================================================
-lcSql = ;
-    "SELECT " + ;
-    "    id, " + ;
-    "    name, " + ;
-    "    status " + ;
-    "FROM your_table " + ;
-    "WHERE status = 'pending' " + ;
-    "ORDER BY id"
+lcSql = "EXEC dbo.usp_ListObranosNaturcst @Aggregate = 0"
 *==============================================================================
 * End of SQL query section
 *==============================================================================

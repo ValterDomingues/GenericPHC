@@ -38,14 +38,11 @@ except ImportError:  # optional unless --loop is used
 # Each row from the result set becomes one item in the email body list.
 # Column values in a row are joined with " | ".
 # =============================================================================
+# Detail rows (like the original IIF query). Use @Aggregate = 1 for SUM per obra.
+# Requires dbo.usp_ListObranosNaturcst (see sql/usp_ListObranosNaturcst.sql).
+# Or paste the batch from sql/dynamic_naturcst_pivot.sql if you prefer inline SQL.
 SQL_QUERY = """
-SELECT
-    id,
-    name,
-    status
-FROM your_table
-WHERE status = 'pending'
-ORDER BY id;
+EXEC dbo.usp_ListObranosNaturcst @Aggregate = 0;
 """
 # =============================================================================
 # End of SQL query section
