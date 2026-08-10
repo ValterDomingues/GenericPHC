@@ -38,11 +38,11 @@ except ImportError:  # optional unless --loop is used
 # Each row from the result set becomes one item in the email body list.
 # Column values in a row are joined with " | ".
 # =============================================================================
-# Detail rows (like the original IIF query). Use @Aggregate = 1 for SUM per obra.
-# Requires dbo.usp_ListObranosNaturcst (see sql/usp_ListObranosNaturcst.sql).
-# Or paste the batch from sql/dynamic_naturcst_pivot.sql if you prefer inline SQL.
+# Full FT / orçamento / custos report with dynamic naturcst columns.
+# Requires dbo.usp_ListFtCustosPorProcesso (sql/usp_ListFtCustosPorProcesso.sql).
+# Or run the batch in sql/dynamic_naturcst_pivot.sql (set @mProcesso there).
 SQL_QUERY = """
-EXEC dbo.usp_ListObranosNaturcst @Aggregate = 0;
+EXEC dbo.usp_ListFtCustosPorProcesso @mProcesso = N'YOUR_PROCESSO';
 """
 # =============================================================================
 # End of SQL query section

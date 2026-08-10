@@ -1,26 +1,29 @@
 /*
-  Dynamic naturcst columns from dytable (replaces hardcoded IIF list).
+  Full invoice / orçamento / custos query with dynamic naturcst columns.
 
-  Source of classifications:
+  Classifications come from:
     SELECT campo FROM dytable (NOLOCK) WHERE entityname = 'Jorinf_st_naturcst'
 
-  Builds expressions like:
-    IIF(bi2.u_naturcst = N'Materiais', bi.ettdeb, 0) AS [Materiais],
-    IIF(bi2.u_naturcst = N'Serviços Externos', bi.ettdeb, 0) AS [Serviços Externos],
+  Replaces hardcoded:
+    IIF(stobs.u_naturcst='Materiais', ...) materiais,
     ...
+    SUM(mCustos.materiais), SUM(mCustos.srvExternos), ...
 
-  Uses FOR XML PATH to concatenate the column list safely (TYPE/.value keeps accents).
+  Parameter:
+    @mProcesso — filters ft2.processo
 */
 
 SET NOCOUNT ON;
 
-DECLARE @cols nvarchar(max);
-DECLARE @sql  nvarchar(max);
+DECLARE @mProcesso varchar(50) = N''; -- set your processo value here
+DECLARE @colsIif  nvarchar(max);
+DECLARE @colsSum  nvarchar(max);
+DECLARE @sql      nvarchar(max);
 
--- Build dynamic IIF column list from dytable
-SELECT @cols = STUFF((
+-- Detail columns inside mCustos: IIF(stobs.u_naturcst = N'...', bi.ettdeb, 0) AS [...]
+SELECT @colsIif = STUFF((
     SELECT
-        N',' + N'IIF(bi2.u_naturcst = N' + QUOTENAME(campo, '''')
+        N',' + N'IIF(stobs.u_naturcst = N' + QUOTENAME(campo, '''')
         + N', bi.ettdeb, 0) AS ' + QUOTENAME(campo)
     FROM dytable WITH (NOLOCK)
     WHERE entityname = N'Jorinf_st_naturcst'
@@ -29,34 +32,100 @@ SELECT @cols = STUFF((
     FOR XML PATH(N''), TYPE
 ).value(N'.', N'nvarchar(max)'), 1, 1, N'');
 
-IF @cols IS NULL OR @cols = N''
+-- Outer aggregates: SUM(mCustos.[...]) AS [...]
+SELECT @colsSum = STUFF((
+    SELECT
+        N',' + N'SUM(mCustos.' + QUOTENAME(campo) + N') AS ' + QUOTENAME(campo)
+    FROM dytable WITH (NOLOCK)
+    WHERE entityname = N'Jorinf_st_naturcst'
+      AND NULLIF(LTRIM(RTRIM(campo)), N'') IS NOT NULL
+    ORDER BY campo
+    FOR XML PATH(N''), TYPE
+).value(N'.', N'nvarchar(max)'), 1, 1, N'');
+
+IF @colsIif IS NULL OR @colsIif = N'' OR @colsSum IS NULL OR @colsSum = N''
 BEGIN
     RAISERROR(N'No classifications found in dytable for entityname=Jorinf_st_naturcst.', 16, 1);
     RETURN;
 END;
 
--- Same grain as the original query: one row per bi line
 SET @sql = N'
 SELECT
-    bo.nmdos,
-    bo.obrano,
-    bo.dataobra,
-    bo.marca,' + @cols + N'
-FROM bo WITH (NOLOCK)
-INNER JOIN bi WITH (NOLOCK)
-    ON bo.bostamp = bi.bostamp
-INNER JOIN bi2 WITH (NOLOCK)
-    ON bi.bistamp = bi2.bi2stamp
-WHERE bo.ndos IN (105, 116, 118, 131)
-  AND bi.ettdeb <> 0
-  AND bi2.u_naturcst IN (
-        SELECT campo
-        FROM dytable WITH (NOLOCK)
-        WHERE entityname = N''Jorinf_st_naturcst''
-      );
+    ft.nmdoc,
+    ft.fno,
+    ft.fdata,
+    ft.nome,
+    ft.vendnm,
+    ft.ettiliq - ft.efinv AS venda,
+    mOrc.nmdos,
+    mOrc.obrano,
+    mOrc.dataobra,
+    mOrc.u_dataadju AS adjudicacao,' + @colsSum + N'
+FROM ft WITH (NOLOCK)
+INNER JOIN ft2 WITH (NOLOCK)
+    ON ft.ftstamp = ft2.ft2stamp
+-- Orçamento
+LEFT JOIN (
+    SELECT
+        processo,
+        nmdos,
+        obrano,
+        dataobra,
+        u_dataadju
+    FROM bo WITH (NOLOCK)
+    INNER JOIN bo2 WITH (NOLOCK)
+        ON bo.bostamp = bo2.bo2stamp
+    WHERE bo.ndos = 100
+      AND bo2.adjudicado = 1
+) mOrc
+    ON ft2.processo = mOrc.processo
+INNER JOIN (
+    SELECT
+        ftstamp,
+        SUM(qtt * ecusto) AS custo
+    FROM fi WITH (NOLOCK)
+    WHERE composto = 0
+    GROUP BY ftstamp
+) mFI
+    ON ft.ftstamp = mFI.ftstamp
+-- Custos (dynamic classification columns from dytable)
+LEFT JOIN (
+    SELECT
+        bo.nmdos,
+        bo.obrano,
+        bo.dataobra,
+        bo.marca,' + @colsIif + N'
+    FROM bo WITH (NOLOCK)
+    INNER JOIN bi WITH (NOLOCK)
+        ON bo.bostamp = bi.bostamp
+    INNER JOIN stobs WITH (NOLOCK)
+        ON bi.ref = stobs.ref
+    WHERE bo.ndos IN (105, 116, 118, 131)
+      AND bi.ettdeb <> 0
+) mCustos
+    ON CONVERT(varchar, ft.fno) = mCustos.marca
+   AND ft.ftano = YEAR(mCustos.dataobra)
+WHERE ft.anulado = 0
+  AND ft.ndoc IN (1, 3, 14, 15, 16, 19, 21, 22)
+  AND ft2.processo = @mProcesso
+GROUP BY
+    ft.nmdoc,
+    ft.fno,
+    ft.fdata,
+    ft.nome,
+    ft.vendnm,
+    ft.ettiliq,
+    ft.efinv,
+    mOrc.nmdos,
+    mOrc.obrano,
+    mOrc.dataobra,
+    mOrc.u_dataadju;
 ';
 
 -- Uncomment to inspect the generated statement:
 -- PRINT @sql;
 
-EXEC sys.sp_executesql @sql;
+EXEC sys.sp_executesql
+    @sql,
+    N'@mProcesso varchar(50)',
+    @mProcesso = @mProcesso;
