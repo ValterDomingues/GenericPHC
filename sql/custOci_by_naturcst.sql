@@ -1,8 +1,8 @@
 /*
-  OCI costs by naturcst, with a subtotal row per u_tipo:
-    u_tipo = same as the group
-    campo  = 'Total'
-    valor  = sum of valor for that u_tipo
+  OCI costs by naturcst, with:
+    - detail rows
+    - a subtotal row per u_tipo (campo = 'Total')
+    - a blank spacer row after each Total
 */
 
 ;WITH custOci AS (
@@ -45,7 +45,8 @@ FROM (
         campo,
         valor,
         dytablestamp,
-        0 AS is_total
+        0 AS is_total,
+        u_tipo AS sort_tipo
     FROM base
 
     UNION ALL
@@ -56,11 +57,25 @@ FROM (
         N'Total' AS campo,
         SUM(valor) AS valor,
         MAX(dytablestamp) AS dytablestamp,
-        1 AS is_total
+        1 AS is_total,
+        u_tipo AS sort_tipo
+    FROM base
+    GROUP BY u_tipo
+
+    UNION ALL
+
+    -- Blank spacer row after each Total
+    SELECT
+        CAST(NULL AS varchar(50)) AS u_tipo,
+        CAST(NULL AS nvarchar(100)) AS campo,
+        CAST(NULL AS decimal(18, 2)) AS valor,
+        CAST(NULL AS datetime) AS dytablestamp,
+        2 AS is_total,
+        u_tipo AS sort_tipo
     FROM base
     GROUP BY u_tipo
 ) AS resultado
 ORDER BY
-    u_tipo,
-    is_total,          -- details first, then Total
+    sort_tipo,
+    is_total,          -- details, Total, then blank
     dytablestamp;
