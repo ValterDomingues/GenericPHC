@@ -1,19 +1,20 @@
 *==============================================================================*
 * E-fatura — autenticação e importação de compras (versão melhorada)
 *
-* Melhorias face ao original:
-*  - Corrige Nvl('', x) que anulava sempre o valor (ordem dos argumentos)
-*  - Corrige cálculo de impAdicVal (faltava o sinal de subtração correcto)
-*  - Returns .T./.F. consistentes em func_getDocs
-*  - Extracção CSRF/form fields por regex no HTML (menos frágil que paths XML)
+* Performance (limite 300 docs / pedido):
+*  - NÃO percorrer dia-a-dia por defeito — isso multiplica pedidos HTTP
+*  - Partição ADAPTATIVA do intervalo: só divide quando a resposta devolve 300
+*  - Detalhe IVA (detalheDocumentoAdquirente) é LAZY: só para docs seleccionados
+*    ou ao abrir o detalhe — o scan de detalhe em TODOS os docs é o maior custo
+*
+* Outras melhorias:
+*  - Corrige Nvl('', x); impAdicVal; returns .T./.F.; CSRF/form scraping
 *  - Helpers partilhados (ISO date, cêntimos, params de auth, HTTP)
-*  - LOCAL / Release de objectos COM; menos leaks em ciclos
-*  - Mapeamento explícito dos campos de sessão (sessionID → SessionId, etc.)
-*  - Alias proc_credendiaisAT mantido por compatibilidade (typo histórico)
 *==============================================================================*
 
 #IFNDEF EFATURA_IMPROVED
 #DEFINE EFATURA_IMPROVED .T.
+#DEFINE EFATURA_MAX_DOCS 300
 
 *--- Estado global mínimo necessário ao HTTP Chilkat ---*
 PUBLIC mHttp, mDebug, mFormatBrow
@@ -443,7 +444,7 @@ Procedure proc_comprasEfatura
 		Use In Select('crsCompras')
 	EndIf
 
-	Create Cursor crsCompras (pick L, idDocumento C(20), oriRec C(8), oriRecDes C(20), nifEmitente C(20), ;
+	Create Cursor crsCompras (pick L, detLoaded L, idDocumento C(20), oriRec C(8), oriRecDes C(20), nifEmitente C(20), ;
 		nomeEmitente C(90), nifAdquirente C(20), nifAdquirIntern C(20), nomeAdquirente C(80), atcud C(30), ;
 		tipoDocumento C(8), tipoDocumentoDesc C(20), numeroDocumento C(40), hashDocumento C(10), ;
 		dataEmissaoDocumento D, dataEmissaoStr C(12), isDocEstrang L, valorTotalIva N(12,2), ;
@@ -494,7 +495,7 @@ Procedure proc_comprasEfatura
 		mCtrl = .F.
 	EndDo
 
-	If !func_getDocs()
+	If !func_getDocs(.F.)
 		Return .F.
 	EndIf
 
@@ -502,11 +503,18 @@ Procedure proc_comprasEfatura
 	Return .T.
 EndProc
 
+*--- Limite do webservice E-fatura ---*
+#DEFINE EFATURA_MAX_DOCS 300
+
 Function func_getDocs
-	LOCAL mDocReq, mDocResp, mDocRespJSon, mLinReq, mLinResp, mLinRespXml
-	LOCAL mSearchXml, mDocIvaXml, mDocIvaStr, mTaxRespJSon, mJSonObj
-	LOCAL mDataIni, mDataFin, mUrl, mNumDocs, i, mCnt, mImposto, mTxIva
-	LOCAL lcBase, lcIva, lcTot
+	* tlLoadDetails: .T. = enriquecer IVA de TODOS (lento); .F. = só cabeçalhos (rápido)
+	Lparameters tlLoadDetails
+	LOCAL ldIni, ldFim, lnHits, llWarnDayCap
+
+	If Pcount() < 1 Or Vartype(tlLoadDetails) <> 'L'
+		tlLoadDetails = .F.
+	EndIf
+	llWarnDayCap = .F.
 
 	Select crsCfgItg
 	If Empty(crsCfgItg.SessionId)
@@ -516,11 +524,69 @@ Function func_getDocs
 		EndIf
 	EndIf
 
-	mDataIni = func_isoDate(crsCfgItg.DataIni)
-	mDataFin = func_isoDate(crsCfgItg.DataFim)
+	ldIni = crsCfgItg.DataIni
+	ldFim = crsCfgItg.DataFim
+
+	* Fila de intervalos a consultar (partição adaptativa)
+	If Used('crsRanges')
+		Use In Select('crsRanges')
+	EndIf
+	Create Cursor crsRanges (dIni D, dFim D, done L)
+	Insert Into crsRanges Values (ldIni, ldFim, .F.)
+
+	Regua(0, 1, 'A obter documentos E-fatura…')
+	lnHits = 0
+
+	Do While .T.
+		Select crsRanges
+		Locate For !done
+		If !Found()
+			Exit
+		EndIf
+
+		ldIni = crsRanges.dIni
+		ldFim = crsRanges.dFim
+		Replace crsRanges.done With .T.
+
+		lnHits = lnHits + 1
+		Regua(1, lnHits, 'Pedido ' + Astr(lnHits) + ': ' + Dtoc(ldIni) + ' → ' + Dtoc(ldFim))
+
+		If !func_fetchDocsRange(ldIni, ldFim, @llWarnDayCap)
+			Regua(2)
+			Return .F.
+		EndIf
+	EndDo
+	Regua(2)
+
+	If llWarnDayCap
+		Mensagem('Atenção: pelo menos um dia devolveu exactamente ' + ;
+			Astr(EFATURA_MAX_DOCS) + ' documentos (limite AT).' + Chr(13) + ;
+			'Podem faltar documentos nesse dia.','Directa')
+	EndIf
+
+	* Conta fornecedor em lote (1 lookup SQL por NIF distinto seria ainda melhor;
+	* aqui mantemos lookup por linha mas SEM o HTTP de detalhe)
+	proc_resolveContasEmitente()
+
+	If tlLoadDetails
+		* Modo legado / completo — evitar em períodos longos
+		If !func_enrichDocDetails(.T.)
+			Return .F.
+		EndIf
+	EndIf
+
+	Return .T.
+EndFunc
+
+Function func_fetchDocsRange
+	* Consulta um intervalo. Se atingir 300 e o intervalo tiver >1 dia, parte ao meio
+	* e reencaminha subtarefas para crsRanges (não grava as 300 linhas truncadas).
+	Lparameters tdIni, tdFim, tlWarnDayCap
+	LOCAL mDocReq, mDocResp, mDocRespJSon, mUrl, mNumDocs, mNumElem, i, ldMid
+
 	mUrl = 'https://faturas.portaldasfinancas.gov.pt/json/obterDocumentosAdquirente.action' + ;
-		'?dataInicioFilter=' + mDataIni + ;
-		'&dataFimFilter=' + mDataFin + ;
+		'?dataInicioFilter=' + func_isoDate(tdIni) + ;
+		'&dataFimFilter=' + func_isoDate(tdFim) + ;
 		'&ambitoAquisicaoFilter=TODOS'
 
 	mDocReq = CreateObject('Chilkat_9_5_0.HttpRequest')
@@ -535,7 +601,6 @@ Function func_getDocs
 		EndIf
 		Return .F.
 	EndIf
-
 	If mDocResp.StatusCode != 200
 		Mensagem('Consulta Docs - Erro ' + Astr(mDocResp.StatusCode), 'Directa')
 		Return .F.
@@ -548,13 +613,33 @@ Function func_getDocs
 	EndIf
 
 	mNumDocs = mDocRespJSon.SizeOfArray('linhas')
+	mNumElem = mDocRespJSon.IntOf('numElementos')
+	If mNumElem <= 0
+		mNumElem = mNumDocs
+	EndIf
+
+	* Limite AT atingido → dividir intervalo (excepto dia único)
+	If mNumElem >= EFATURA_MAX_DOCS Or mNumDocs >= EFATURA_MAX_DOCS
+		If tdIni < tdFim
+			ldMid = tdIni + Int((tdFim - tdIni) / 2)
+			Insert Into crsRanges Values (tdIni, ldMid, .F.)
+			Insert Into crsRanges Values (ldMid + 1, tdFim, .F.)
+			Release mDocReq, mDocResp, mDocRespJSon
+			Return .T.
+		Else
+			* Um único dia com 300+ docs: grava o que veio e assinala aviso
+			tlWarnDayCap = .T.
+		EndIf
+	EndIf
+
 	i = 0
 	Do While i < mNumDocs
 		mDocRespJSon.I = i
-
 		Select crsCompras
 		Append Blank
 		Replace ;
+			pick With .F., ;
+			detLoaded With .F., ;
 			idDocumento With func_safeStr(mDocRespJSon.StringOf('linhas[i].idDocumento')), ;
 			nifEmitente With func_safeStr(mDocRespJSon.StringOf('linhas[i].nifEmitente')), ;
 			nomeEmitente With func_htmlToPlain(mDocRespJSon.StringOf('linhas[i].nomeEmitente')), ;
@@ -575,124 +660,167 @@ Function func_getDocs
 			nifAdquirIntern With func_safeStr(mDocRespJSon.StringOf('linhas[i].nifAdquirenteInternac')), ;
 			atcud With func_safeStr(mDocRespJSon.StringOf('linhas[i].atcud')), ;
 			isDocEstrang With (Lower(func_safeStr(mDocRespJSon.StringOf('linhas[i].isDocumentoEstrangeiro'))) <> 'false')
-
 		i = i + 1
 	EndDo
 
-	Regua(0, Reccount('crsCompras'), 'A listar as compras filtradas')
+	Release mDocReq, mDocResp, mDocRespJSon
+	Return .T.
+EndFunc
+
+Procedure proc_resolveContasEmitente
+	LOCAL lcNif, lcConta
+	Select crsCompras
+	Scan For Empty(contaEmitente) And !Empty(nifEmitente)
+		lcNif = Alltrim(crsCompras.nifEmitente)
+		lcConta = GetUmValorString([pc], [conta], ;
+			[ano=] + Astr(Year(crsCfgItg.DataIni)) + ;
+			[ And ncont='] + lcNif + [' And recapit='F'])
+		Replace crsCompras.contaEmitente With lcConta
+	EndScan
+EndProc
+
+Function func_enrichDocDetails
+	* Enriquece linhas com breakdown IVA via detalheDocumentoAdquirente.
+	* tlAll=.T. → todas; .F. → só pick=.T. e ainda sem detalhe.
+	Lparameters tlAll
+	LOCAL lnTot, lnDone
+
+	If Pcount() < 1 Or Vartype(tlAll) <> 'L'
+		tlAll = .F.
+	EndIf
+
+	Select crsCompras
+	If tlAll
+		Count To lnTot For !detLoaded
+	Else
+		Count To lnTot For pick And !detLoaded
+	EndIf
+	If lnTot = 0
+		Return .T.
+	EndIf
+
+	Regua(0, lnTot, 'A obter detalhe IVA…')
+	lnDone = 0
 	Select crsCompras
 	Scan
-		Regua(1, Recno(), 'Registo ' + Astr(Recno()) + ' de ' + Astr(Reccount('crsCompras')))
+		If detLoaded
+			Loop
+		EndIf
+		If !tlAll And !pick
+			Loop
+		EndIf
 
-		mUrl = 'https://faturas.portaldasfinancas.gov.pt/detalheDocumentoAdquirente.action' + ;
-			'?idDocumento=' + Alltrim(crsCompras.idDocumento) + ;
-			'&dataEmissaoDocumento=' + Alltrim(crsCompras.dataEmissaoStr)
+		lnDone = lnDone + 1
+		Regua(1, lnDone, 'Detalhe ' + Astr(lnDone) + ' / ' + Astr(lnTot))
 
-		mLinReq = CreateObject('Chilkat_9_5_0.HttpRequest')
-		proc_addAuthParams(mLinReq)
-		mLinResp = mHttp.PostUrlEncoded(mUrl, mLinReq)
-
-		If mHttp.LastMethodSuccess != 1
-			If mDebug
-				Mensagem(mHttp.LastErrorText, 'Directa')
-			Else
-				Mensagem('Erro a obter detalhe do documento ' + Alltrim(crsCompras.idDocumento), 'Directa')
-			EndIf
+		If !func_loadOneDocDetail()
 			Regua(2)
 			Return .F.
-		EndIf
-
-		If mLinResp.StatusCode != 200
-			Mensagem('Consulta Docs - Erro ' + Astr(mLinResp.StatusCode), 'Directa')
-			Regua(2)
-			Return .F.
-		EndIf
-
-		mLinRespXml = CreateObject('Chilkat_9_5_0.Xml')
-		mLinRespXml.LoadXml(mLinResp.BodyStr)
-
-		mSearchXml = mLinRespXml.GetSelf()
-		mDocIvaXml = mLinRespXml.SearchAllForContent(mSearchXml, '*jQuery(document)*')
-		If mLinRespXml.LastMethodSuccess = 1 And !Isnull(mDocIvaXml)
-			mDocIvaStr = mDocIvaXml.Content
-			If At('dadosLinhasDocumento', mDocIvaStr) > 0
-				mDocIvaStr = Right(mDocIvaStr, Len(mDocIvaStr) - At('dadosLinhasDocumento', mDocIvaStr) + 1)
-				mDocIvaStr = Strtran(Left(mDocIvaStr, At('];', mDocIvaStr)), 'dadosLinhasDocumento = ', '')
-
-				mTaxRespJSon = CreateObject('Chilkat_9_5_0.JsonArray')
-				If mTaxRespJSon.Load(mDocIvaStr) = 1
-					mCnt = 0
-					Do While mCnt < mTaxRespJSon.Size
-						mJSonObj = mTaxRespJSon.ObjectAt(mCnt)
-						mImposto = func_safeStr(mJSonObj.StringOf('tipoTaxaIva'))
-						If mImposto = 'IVA'
-							mTxIva = func_safeStr(mJSonObj.StringOf('taxaIva'))
-							lcBase = func_centsToNum(mJSonObj.StringOf('valorBaseTributavel'))
-							lcIva = func_centsToNum(mJSonObj.StringOf('valorIva'))
-							lcTot = func_centsToNum(mJSonObj.StringOf('valorTotal'))
-
-							Do Case
-								Case mTxIva = 'null' Or mTxIva = '0'
-									Replace crsCompras.incIse With crsCompras.incIse + lcBase
-
-								Case mTxIva = '600'
-									Replace crsCompras.incRed With crsCompras.incRed + lcBase, ;
-										crsCompras.ivaRed With crsCompras.ivaRed + lcIva, ;
-										crsCompras.totRed With crsCompras.totRed + lcTot, ;
-										crsCompras.txRed With func_centsToNum(mJSonObj.StringOf('taxaIva'))
-
-								Case mTxIva = '1300'
-									Replace crsCompras.incInt With crsCompras.incInt + lcBase, ;
-										crsCompras.ivaInt With crsCompras.ivaInt + lcIva, ;
-										crsCompras.totInt With crsCompras.totInt + lcTot, ;
-										crsCompras.txInt With func_centsToNum(mJSonObj.StringOf('taxaIva'))
-
-								Case mTxIva = '2300'
-									Replace crsCompras.incNor With crsCompras.incNor + lcBase, ;
-										crsCompras.ivaNor With crsCompras.ivaNor + lcIva, ;
-										crsCompras.totNor With crsCompras.totNor + lcTot, ;
-										crsCompras.txNor With func_centsToNum(mJSonObj.StringOf('taxaIva'))
-							EndCase
-						Else
-							If func_centsToNum(mJSonObj.StringOf('valorIva')) != 0
-								Replace crsCompras.impAdicDesc With Alltrim(mImposto), ;
-									crsCompras.impAdicTx With func_centsToNum(mJSonObj.StringOf('taxaIva')), ;
-									crsCompras.impAdicVal With crsCompras.impAdicVal + func_centsToNum(mJSonObj.StringOf('valorIva'))
-							EndIf
-						EndIf
-						Release mJSonObj
-						mCnt = mCnt + 1
-					EndDo
-				EndIf
-				Release mTaxRespJSon
-			EndIf
-		EndIf
-		Release mLinRespXml, mLinReq, mLinResp
-
-		* Conta de fornecedor (se existir no PC)
-		Replace crsCompras.contaEmitente With GetUmValorString([pc], [conta], ;
-			[ano=] + Astr(Year(crsCfgItg.DataIni)) + ;
-			[ And ncont='] + Alltrim(crsCompras.nifEmitente) + [' And recapit='F'])
-
-		* Diferença residual → outros impostos
-		* Original: valorTotal - base + iva  (incorrecto)
-		* Correcto: valorTotal - (base + iva)
-		If Round(crsCompras.valorTotalBaseTributavel + crsCompras.valorTotalIva + crsCompras.impAdicVal, 2) ;
-				!= Round(crsCompras.valorTotal, 2)
-			Replace crsCompras.impAdicVal With ;
-				Round(crsCompras.valorTotal - crsCompras.valorTotalBaseTributavel - crsCompras.valorTotalIva, 2)
-		EndIf
-
-		* Ajuste incidência isenta para fechar a base tributável
-		If Round(crsCompras.incIse + crsCompras.incRed + crsCompras.incInt + crsCompras.incNor, 2) ;
-				!= Round(crsCompras.valorTotalBaseTributavel, 2)
-			Replace crsCompras.incIse With ;
-				Round(crsCompras.valorTotalBaseTributavel - crsCompras.incRed - crsCompras.incInt - crsCompras.incNor, 2)
 		EndIf
 	EndScan
 	Regua(2)
+	Return .T.
+EndFunc
 
-	Release mDocReq, mDocResp, mDocRespJSon
+Function func_loadOneDocDetail
+	* Assume registo corrente em crsCompras
+	LOCAL mLinReq, mLinResp, mLinRespXml, mSearchXml, mDocIvaXml, mDocIvaStr
+	LOCAL mTaxRespJSon, mJSonObj, mUrl, mCnt, mImposto, mTxIva, lcBase, lcIva, lcTot
+
+	If crsCompras.detLoaded
+		Return .T.
+	EndIf
+
+	mUrl = 'https://faturas.portaldasfinancas.gov.pt/detalheDocumentoAdquirente.action' + ;
+		'?idDocumento=' + Alltrim(crsCompras.idDocumento) + ;
+		'&dataEmissaoDocumento=' + Alltrim(crsCompras.dataEmissaoStr)
+
+	mLinReq = CreateObject('Chilkat_9_5_0.HttpRequest')
+	proc_addAuthParams(mLinReq)
+	mLinResp = mHttp.PostUrlEncoded(mUrl, mLinReq)
+
+	If mHttp.LastMethodSuccess != 1
+		If mDebug
+			Mensagem(mHttp.LastErrorText, 'Directa')
+		Else
+			Mensagem('Erro a obter detalhe do documento ' + Alltrim(crsCompras.idDocumento), 'Directa')
+		EndIf
+		Return .F.
+	EndIf
+	If mLinResp.StatusCode != 200
+		Mensagem('Consulta Docs - Erro ' + Astr(mLinResp.StatusCode), 'Directa')
+		Return .F.
+	EndIf
+
+	mLinRespXml = CreateObject('Chilkat_9_5_0.Xml')
+	mLinRespXml.LoadXml(mLinResp.BodyStr)
+	mSearchXml = mLinRespXml.GetSelf()
+	mDocIvaXml = mLinRespXml.SearchAllForContent(mSearchXml, '*jQuery(document)*')
+
+	If mLinRespXml.LastMethodSuccess = 1 And !Isnull(mDocIvaXml)
+		mDocIvaStr = mDocIvaXml.Content
+		If At('dadosLinhasDocumento', mDocIvaStr) > 0
+			mDocIvaStr = Right(mDocIvaStr, Len(mDocIvaStr) - At('dadosLinhasDocumento', mDocIvaStr) + 1)
+			mDocIvaStr = Strtran(Left(mDocIvaStr, At('];', mDocIvaStr)), 'dadosLinhasDocumento = ', '')
+
+			mTaxRespJSon = CreateObject('Chilkat_9_5_0.JsonArray')
+			If mTaxRespJSon.Load(mDocIvaStr) = 1
+				mCnt = 0
+				Do While mCnt < mTaxRespJSon.Size
+					mJSonObj = mTaxRespJSon.ObjectAt(mCnt)
+					mImposto = func_safeStr(mJSonObj.StringOf('tipoTaxaIva'))
+					If mImposto = 'IVA'
+						mTxIva = func_safeStr(mJSonObj.StringOf('taxaIva'))
+						lcBase = func_centsToNum(mJSonObj.StringOf('valorBaseTributavel'))
+						lcIva = func_centsToNum(mJSonObj.StringOf('valorIva'))
+						lcTot = func_centsToNum(mJSonObj.StringOf('valorTotal'))
+						Do Case
+							Case mTxIva = 'null' Or mTxIva = '0'
+								Replace crsCompras.incIse With crsCompras.incIse + lcBase
+							Case mTxIva = '600'
+								Replace crsCompras.incRed With crsCompras.incRed + lcBase, ;
+									crsCompras.ivaRed With crsCompras.ivaRed + lcIva, ;
+									crsCompras.totRed With crsCompras.totRed + lcTot, ;
+									crsCompras.txRed With func_centsToNum(mJSonObj.StringOf('taxaIva'))
+							Case mTxIva = '1300'
+								Replace crsCompras.incInt With crsCompras.incInt + lcBase, ;
+									crsCompras.ivaInt With crsCompras.ivaInt + lcIva, ;
+									crsCompras.totInt With crsCompras.totInt + lcTot, ;
+									crsCompras.txInt With func_centsToNum(mJSonObj.StringOf('taxaIva'))
+							Case mTxIva = '2300'
+								Replace crsCompras.incNor With crsCompras.incNor + lcBase, ;
+									crsCompras.ivaNor With crsCompras.ivaNor + lcIva, ;
+									crsCompras.totNor With crsCompras.totNor + lcTot, ;
+									crsCompras.txNor With func_centsToNum(mJSonObj.StringOf('taxaIva'))
+						EndCase
+					Else
+						If func_centsToNum(mJSonObj.StringOf('valorIva')) != 0
+							Replace crsCompras.impAdicDesc With Alltrim(mImposto), ;
+								crsCompras.impAdicTx With func_centsToNum(mJSonObj.StringOf('taxaIva')), ;
+								crsCompras.impAdicVal With crsCompras.impAdicVal + func_centsToNum(mJSonObj.StringOf('valorIva'))
+						EndIf
+					EndIf
+					Release mJSonObj
+					mCnt = mCnt + 1
+				EndDo
+			EndIf
+			Release mTaxRespJSon
+		EndIf
+	EndIf
+	Release mLinRespXml, mLinReq, mLinResp
+
+	If Round(crsCompras.valorTotalBaseTributavel + crsCompras.valorTotalIva + crsCompras.impAdicVal, 2) ;
+			!= Round(crsCompras.valorTotal, 2)
+		Replace crsCompras.impAdicVal With ;
+			Round(crsCompras.valorTotal - crsCompras.valorTotalBaseTributavel - crsCompras.valorTotalIva, 2)
+	EndIf
+	If Round(crsCompras.incIse + crsCompras.incRed + crsCompras.incInt + crsCompras.incNor, 2) ;
+			!= Round(crsCompras.valorTotalBaseTributavel, 2)
+		Replace crsCompras.incIse With ;
+			Round(crsCompras.valorTotalBaseTributavel - crsCompras.incRed - crsCompras.incInt - crsCompras.incNor, 2)
+	EndIf
+
+	Replace crsCompras.detLoaded With .T.
 	Return .T.
 EndFunc
 
@@ -741,12 +869,25 @@ Procedure proc_listCompras
 
 	Browlist('Listagem de documentos de compra', 'crsCompras', 'listCompras', ;
 		.F., .F., .F., .T., .F., '', .T., .T.)
+
+	* Após a lista: enriquecer só os seleccionados (antes de lançar / exportar)
+	If func_enrichDocDetails(.F.)
+		* ok
+	EndIf
+
 	Release list_tit, list_cam, list_tam, list_pic, list_rot
 EndProc
 
 Procedure proc_showDetail
 	Lparameters mParA, mParB
 	LOCAL mIdDoc
+
+	* Detalhe on-demand (1 HTTP) se ainda não carregado
+	If !crsCompras.detLoaded
+		If !func_loadOneDocDetail()
+			Return
+		EndIf
+	EndIf
 
 	mIdDoc = crsCompras.idDocumento
 	Select * From crsCompras Where crsCompras.idDocumento = mIdDoc Into Cursor crsTmp ReadWrite
