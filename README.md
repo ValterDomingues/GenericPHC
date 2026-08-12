@@ -2,8 +2,10 @@
 
 PHC / Visual FoxPro utilities and fixes.
 
-## E-fatura compras (improved)
+## E-fatura compras
 
-See `docs/efatura-vfp-improvements.md` and `prg/efatura_compras_improved.prg`.
+- Improved routine: `prg/efatura_compras_improved.prg`
+- Bug fixes: `docs/efatura-vfp-improvements.md`
+- Performance (300-doc limit / faster import): `docs/efatura-performance.md`
 
-Fixes silent `Nvl` wiping of fields, wrong `impAdicVal` math, fragile Chilkat HTML scraping, and inconsistent function returns.
+Use **adaptive date splitting** + **lazy IVA detail** instead of day-by-day + detail-per-document.
