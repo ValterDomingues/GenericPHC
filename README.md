@@ -5,7 +5,7 @@ PHC / Visual FoxPro utilities and fixes.
 ## E-fatura compras
 
 - Improved routine: `prg/efatura_compras_improved.prg`
+- **Fast IVA path (skip most detail HTTP):** `prg/efatura_compras_fast_detail.prg`
 - Bug fixes: `docs/efatura-vfp-improvements.md`
-- Performance (300-doc limit / faster import): `docs/efatura-performance.md`
-
-Use **adaptive date splitting** + **lazy IVA detail** instead of day-by-day + detail-per-document.
+- Performance (300-doc limit): `docs/efatura-performance.md`
+- **Detail bottleneck alternatives:** `docs/efatura-detail-alternatives.md`
