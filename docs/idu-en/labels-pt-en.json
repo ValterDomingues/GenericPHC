@@ -1,0 +1,35 @@
+{
+  "document": "PHC IDU letter — Documentos por regularizar (outstanding documents)",
+  "source_language": "pt",
+  "target_language": "en",
+  "notes": [
+    "Printed labels, table headers and letter boilerplate are translated.",
+    "Customer name, address lines, amounts, dates, document numbers and IBAN stay unchanged.",
+    "IRLANDA is translated because it is the Portuguese country caption on the address block."
+  ],
+  "labels": [
+    {"id": "addressee", "pt": "Exmo.(s) Sr.(s):", "en": "Dear Sir(s):", "where": "Address block and salutation"},
+    {"id": "addressee_alt", "pt": "Exmo.(s) Sr(s):", "en": "Dear Sir(s):", "where": "Letter salutation (no dots in Sr)"},
+    {"id": "date", "pt": "Data:", "en": "Date:", "where": "Letter date"},
+    {"id": "subject", "pt": "Assunto:Documentos por regularizar", "en": "Subject: Outstanding documents", "where": "Subject line"},
+    {"id": "opening", "pt": "Os n/ melhores cumprimentos.", "en": "Our best regards.", "where": "Opening greeting"},
+    {"id": "overdue_notice", "pt": "Vimos informar que se encontra (m) vencida (s) a (s) nossa (s) factura (s) abaixo indicada (s).", "en": "Please be advised that the invoice(s) listed below is/are overdue.", "where": "Body"},
+    {"id": "credit_terms", "pt": "Lembramos que as condições de crédito oportunamente acordadas se encontram ultrapassadas.", "en": "Please note that the credit terms previously agreed have been exceeded.", "where": "Body"},
+    {"id": "col_document", "pt": "Documento", "en": "Document", "where": "Table header"},
+    {"id": "col_number", "pt": "Número", "en": "Number", "where": "Table header"},
+    {"id": "col_date", "pt": "Data", "en": "Date", "where": "Table header"},
+    {"id": "col_due_date", "pt": "Vencimento", "en": "Due date", "where": "Table header"},
+    {"id": "col_issue_amount", "pt": "Valor Emissão", "en": "Issue amount", "where": "Table header"},
+    {"id": "col_outstanding", "pt": "Valor por Regularizar", "en": "Amount outstanding", "where": "Table header"},
+    {"id": "col_age", "pt": "Idade", "en": "Age", "where": "Table header (days)"},
+    {"id": "our_invoice", "pt": "N/Factura", "en": "Our Invoice", "where": "Document type"},
+    {"id": "our_credit_note", "pt": "N/Nt. Crédito", "en": "Our Credit Note", "where": "Document type"},
+    {"id": "balance_due", "pt": "Total em Falta", "en": "Balance due", "where": "Totals line"},
+    {"id": "pay_iban", "pt": "Agradecemos o pagamento por transferência bancária para o nosso IBAN:", "en": "Please make payment by bank transfer to our IBAN:", "where": "Payment instructions (keep IBAN)"},
+    {"id": "pay_ref", "pt": "(CGD), indicando no campo referência o seu nome e número de cliente ou em alternativa envio de cheque", "en": "(CGD), quoting your name and customer number in the reference, or alternatively by cheque", "where": "Payment instructions"},
+    {"id": "crossed_payment", "pt": "Se esta carta se tiver cruzado com o vosso pagamento, por favor não a considere.", "en": "If this letter has crossed with your payment, please disregard it.", "where": "Disclaimer"},
+    {"id": "closing", "pt": "Com os melhores cumprimentos", "en": "Yours faithfully", "where": "Closing"},
+    {"id": "sincerely", "pt": "Atentamente", "en": "Yours sincerely", "where": "Sign-off"},
+    {"id": "country", "pt": "IRLANDA", "en": "IRELAND", "where": "Address country caption"}
+  ]
+}
