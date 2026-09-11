@@ -1,0 +1,164 @@
+{
+  "document": "PHC Recibo (receipt) print layout",
+  "source_language": "pt",
+  "target_language": "en",
+  "notes": [
+    "Only printed labels, captions and legal notices are translated.",
+    "Customer/supplier data, amounts, dates, ATCUD, certificate number and legal company names stay unchanged.",
+    "Use these strings in the Recibo IDU (Impressão Definida pelo Utilizador) in PHC."
+  ],
+  "labels": [
+    {
+      "id": "doc_title",
+      "pt": "Recibo",
+      "en": "Receipt",
+      "where": "Document title"
+    },
+    {
+      "id": "doc_no_abbrev",
+      "pt": "nº",
+      "en": "No.",
+      "where": "Document number prefix next to the title"
+    },
+    {
+      "id": "series",
+      "pt": "Serie:",
+      "en": "Series:",
+      "where": "Series label"
+    },
+    {
+      "id": "duplicate",
+      "pt": "2.ª Via",
+      "en": "Duplicate",
+      "where": "Copy indicator (SAF-T / AT second copy)"
+    },
+    {
+      "id": "addressee",
+      "pt": "Exmo(a).Snr(a)",
+      "en": "To:",
+      "where": "Form of address above the customer name"
+    },
+    {
+      "id": "customer_vat",
+      "pt": "Nº de Contribuinte:",
+      "en": "VAT No.:",
+      "where": "Customer tax identification number"
+    },
+    {
+      "id": "date",
+      "pt": "Data:",
+      "en": "Date:",
+      "where": "Receipt date"
+    },
+    {
+      "id": "remarks",
+      "pt": "Observações:",
+      "en": "Remarks:",
+      "where": "Notes / observations"
+    },
+    {
+      "id": "received_from",
+      "pt": "Nesta data recebemos de V.Exas. o seguinte:",
+      "en": "On this date we received from you the following:",
+      "where": "Preamble above the settlement table"
+    },
+    {
+      "id": "col_document",
+      "pt": "Documento",
+      "en": "Document",
+      "where": "Table header"
+    },
+    {
+      "id": "col_number",
+      "pt": "Número",
+      "en": "Number",
+      "where": "Table header"
+    },
+    {
+      "id": "col_date",
+      "pt": "Data",
+      "en": "Date",
+      "where": "Table header"
+    },
+    {
+      "id": "col_settled_amount",
+      "pt": "Valor regularizado",
+      "en": "Amount settled",
+      "where": "Table header"
+    },
+    {
+      "id": "our_invoice",
+      "pt": "N/Factura",
+      "en": "Our Invoice",
+      "where": "Settled document type"
+    },
+    {
+      "id": "landline_notice",
+      "pt": "(Chamada para a rede fixa nacional)",
+      "en": "(Call to the national landline network)",
+      "where": "Phone regulatory notice"
+    },
+    {
+      "id": "certified_software",
+      "pt": "Software PHC - Emitido por programa certificado nº 0006/AT",
+      "en": "PHC Software - Issued by certified program no. 0006/AT",
+      "where": "AT certified software footer; keep the certificate number and build id"
+    },
+    {
+      "id": "total_amount",
+      "pt": "Num total de",
+      "en": "Total amount",
+      "where": "Totals box"
+    },
+    {
+      "id": "fin_discount",
+      "pt": "Desc.Fin.:",
+      "en": "Fin. disc.:",
+      "where": "Totals box, financial discount"
+    },
+    {
+      "id": "amount_in_words",
+      "pt": "São:",
+      "en": "Say:",
+      "where": "Totals box, amount in words"
+    },
+    {
+      "id": "amount_in_words_value",
+      "pt": "Vinte e Sete Mil Euros",
+      "en": "Twenty-Seven Thousand Euros",
+      "where": "Totals box, amount in words (this receipt)"
+    },
+    {
+      "id": "signature_stamp",
+      "pt": "(Assinatura e Carimbo)",
+      "en": "(Signature and Stamp)",
+      "where": "Signature line"
+    },
+    {
+      "id": "issuer_vat",
+      "pt": "Contribuinte Nº",
+      "en": "VAT No.",
+      "where": "Issuer tax identification number"
+    },
+    {
+      "id": "valid_after_collection",
+      "pt": "Este documento so é válido após boa cobrança.",
+      "en": "This document is only valid after cleared payment.",
+      "where": "Footer disclaimer (original omits the accent on só)"
+    },
+    {
+      "id": "company_tagline",
+      "pt": "Desenvolvimento e fabrico de soluções inovadoras de automação, robótica e visão artificial",
+      "en": "Development and manufacture of innovative automation, robotics and machine vision solutions",
+      "where": "Issuer tagline under QR / certification marks"
+    }
+  ],
+  "kept_as_is": [
+    "Legal company names (e.g. STREAK - Engenharia em Automação, Lda.)",
+    "Addresses, cities and postcodes",
+    "Customer name and address",
+    "Numeric amounts, dates, document numbers, series number",
+    "ATCUD and AT certificate / build numbers",
+    "Already-English labels: Phone, Fax, Email"
+  ]
+}
