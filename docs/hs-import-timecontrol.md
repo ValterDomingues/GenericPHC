@@ -17,7 +17,7 @@ Layout Excel (inalterado): coluna **B** código, **C** funcionário, **D** data,
 
 | Issue | Original | Fix |
 |---|---|---|
-| **Quantidade sem `:`** | `VAL("1") + VAL("1")/60` → **1.02** no subsídio de refeição | `func_parseHoras`: sem `:` usa o número; HH:MM só quando há `:` |
+| **Quantidade sem `:`** | `VAL("1") + VAL("1")/60` → **1.02** no subsídio de refeição; `"1,5"` → **1.53** | `func_parseHoras`: sem `:` usa o número; HH:MM só quando há `:`; vírgula decimal |
 | **Tipo de ficheiro** | Combo = `Horas Extraordinárias`, teste = `'Horas Extra'` (depende de `SET EXACT`) | `func_codTipoFich` com `==` / `Left` / `Atc` |
 | **xVars** | `Locate` + `Skip` na ordem física | `Locate For no = 1/2/3` |
 | **Linha de erro** | `proc_insErr(Recno(), …)` depois de `GetUmValorString` (área de trabalho errada) | Número de linha Excel gravado em `crsFileImport.Linha` |

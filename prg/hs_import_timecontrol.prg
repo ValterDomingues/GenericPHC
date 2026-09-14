@@ -13,7 +13,7 @@
 *    folhas pelo nome, ReadOnly, Quit/Release em Finally (sem processos zombie)
 *  - Não pára na primeira linha vazia; ignora buracos no meio da folha
 *  - Datas a partir do Value COM (não .Text / CToD frágil)
-*  - Horas HH:MM e quantidade decimal; "1" já não vira 1.02 (bug do ':')
+*  - Horas HH:MM e quantidade decimal; "1" já não vira 1.02 nem "1,5" vira 1.53
 *  - Recno() da linha Excel guardado ANTES dos lookups (linha de erro correcta)
 *  - mDescTipo reiniciado por registo (já não herda o anterior)
 *  - Aspas em nomes (D'Almeida) escapadas no INSERT
