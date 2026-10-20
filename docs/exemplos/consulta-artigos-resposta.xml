@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<consultaArtigosResposta versao="1.0">
+  <sucesso>true</sucesso>
+  <artigos>
+    <artigo>
+      <referenciaPedida>MAT-100</referenciaPedida>
+      <encontrado>true</encontrado>
+      <referencia>MAT-100</referencia>
+      <designacao>Perfil de alumínio 40 mm</designacao>
+      <unidade>MT</unidade>
+      <usaLote>true</usaLote>
+      <preco>15.50</preco>
+    </artigo>
+    <artigo>
+      <referenciaPedida>ESPECIAL-1200</referenciaPedida>
+      <encontrado>false</encontrado>
+    </artigo>
+  </artigos>
+</consultaArtigosResposta>

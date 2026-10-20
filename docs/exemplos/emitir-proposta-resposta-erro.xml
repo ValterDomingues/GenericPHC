@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<emitirPropostaResposta versao="1.0">
+  <sucesso>false</sucesso>
+  <idOrigem>CRM-2026-00045</idOrigem>
+  <erros>
+    <erro>
+      <codigo>UTILIZADOR_ATENDIMENTO_INVALIDO</codigo>
+      <mensagem>O utilizador de atendimento não existe na tabela interna da Matobra.</mensagem>
+      <elemento>utilizadorAtendimento</elemento>
+    </erro>
+  </erros>
+</emitirPropostaResposta>
