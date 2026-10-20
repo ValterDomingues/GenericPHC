@@ -89,7 +89,7 @@ A ficha de contacto no PHC CS é a tabela `cl`. A chave técnica é `cl.no` + `c
 
 ### 5.1 Consulta
 
-O pedido é sempre o mesmo. Traz uma tag para cada parâmetro, pela ordem `nif`, `email`, `telefone`, `numero` e `estabelecimento`. A tag vai vazia quando o software externo não tem esse dado. O software externo não escolhe o critério: envia o pedido e o endpoint decide qual parâmetro usar.
+O pedido é sempre o mesmo. Traz uma tag para cada parâmetro, pela ordem `nif`, `email`, `telefone`, `numero`, `estabelecimento` e `alteradoDesde`. A tag vai vazia quando o software externo não tem esse dado. O software externo não escolhe o critério: envia o pedido e o endpoint decide qual parâmetro usar.
 
 ```xml
 <consultaContacto versao="1.0">
@@ -98,6 +98,7 @@ O pedido é sempre o mesmo. Traz uma tag para cada parâmetro, pela ordem `nif`,
   <telefone></telefone>
   <numero></numero>
   <estabelecimento></estabelecimento>
+  <alteradoDesde>2026-10-01T00:00:00</alteradoDesde>
 </consultaContacto>
 ```
 
@@ -107,7 +108,7 @@ O endpoint escolhe um único parâmetro, nesta ordem, e ignora os restantes:
 2. `nif`, quando `numero` está vazio e `nif` tem conteúdo.
 3. `email`, quando os anteriores estão vazios e `email` tem conteúdo.
 4. `telefone`, quando os anteriores estão vazios e `telefone` tem conteúdo.
-5. Catálogo, quando as quatro tags estão vazias.
+5. Catálogo, quando as quatro tags de pesquisa estão vazias. Neste caso `alteradoDesde` é obrigatório.
 
 | Parâmetro escolhido | Critério |
 |---|---|
@@ -116,9 +117,11 @@ O endpoint escolhe um único parâmetro, nesta ordem, e ignora os restantes:
 | `email` | `cl.email` igual ao valor, sem espaços nas extremidades e sem distinguir maiúsculas |
 | `telefone` | Os dígitos do valor coincidem com os dígitos de `cl.telefone` ou de `cl.tlmvl`. A tag tem de conter pelo menos 6 dígitos |
 
-O valor do parâmetro escolhido é validado. Se for inválido, a resposta traz o código de erro correspondente e o endpoint não passa ao parâmetro seguinte. As outras tags, mesmo preenchidas, não entram na pesquisa.
+O valor do parâmetro escolhido é validado. Se for inválido, a resposta traz o código de erro correspondente e o endpoint não passa ao parâmetro seguinte. As outras tags, mesmo preenchidas, não entram na pesquisa. `alteradoDesde` só é lido no catálogo; numa pesquisa por `numero`, `nif`, `email` ou `telefone` o endpoint ignora essa tag.
 
-No catálogo, a resposta inclui todos os contactos da tabela `cl`, ativos e inativos, ordenados por `numero` e `estabelecimento`. Cada ficha traz `ativo`. O elemento `total` é o número de contactos devolvidos. `encontrado` é verdadeiro quando `total` é maior que zero.
+No catálogo, a resposta inclui os contactos da tabela `cl`, ativos e inativos, cuja introdução ou última alteração é posterior a `alteradoDesde`. A comparação usa `ousrdata` com `ousrhora` para a introdução e `usrdata` com `usrhora` para a alteração. Hora em falta conta como `00:00:00`. O instante indicado fica de fora: entra o registo em que um dos dois momentos é maior do que `alteradoDesde`. A hora é local, em Lisboa, no formato `AAAA-MM-DDThh:mm:ss`, sem fuso. A primeira carga pode usar `1900-01-01T00:00:00`. Sem esta tag, ou com valor ilegível, o endpoint não devolve o catálogo.
+
+A ordem é `numero` e `estabelecimento`. Cada ficha traz `ativo`. O elemento `total` é o número de contactos devolvidos. `encontrado` é verdadeiro quando `total` é maior que zero.
 
 Uma pesquisa sem correspondência é um resultado válido: `sucesso=true`, `encontrado=false`, `total=0`. Não é um erro de NIF nem de número.
 
@@ -171,23 +174,28 @@ A ficha de artigo é a tabela `st`. A referência é `st.ref`.
 
 ### 6.1 Consulta
 
-O pedido leva uma ou mais referências, ou vai vazio para obter o catálogo.
+O pedido leva uma ou mais referências, ou vai sem referências para obter o catálogo.
 
-O pedido está vazio quando não traz nenhum elemento `referencia` com texto depois de removidos os espaços. Servem os dois formatos:
+O pedido de catálogo não traz nenhum elemento `referencia` com texto depois de removidos os espaços. Leva obrigatoriamente `alteradoDesde`. Servem os dois formatos:
 
 ```xml
-<consultaArtigos versao="1.0"/>
+<consultaArtigos versao="1.0">
+  <alteradoDesde>2026-10-01T00:00:00</alteradoDesde>
+</consultaArtigos>
 ```
 
 ```xml
 <consultaArtigos versao="1.0">
   <referencias/>
+  <alteradoDesde>2026-10-01T00:00:00</alteradoDesde>
 </consultaArtigos>
 ```
 
-Nesse caso a resposta lista todas as referências disponíveis: registos de `st` com `ref` preenchida e que não estejam inativos (`st.inactivo = 0`, quando a coluna existir na instalação). A ordem é a da referência. Cada elemento `artigo` vem com `encontrado=true`, `referenciaPedida` igual a `referencia`, a designação (`st.design`), a unidade, o indicador `usaLote` e o preço da tabela 1 do artigo. `G00001` entra nesta lista quando existir em `st`. O elemento `total` indica quantas referências foram devolvidas.
+Nesse caso a resposta lista as referências disponíveis introduzidas ou alteradas depois de `alteradoDesde`: registos de `st` com `ref` preenchida, não inativos (`st.inactivo = 0`, quando a coluna existir na instalação), em que `ousrdata`/`ousrhora` ou `usrdata`/`usrhora` é posterior ao instante pedido. Hora em falta conta como `00:00:00`. O instante indicado fica de fora. A hora é local, em Lisboa, no formato `AAAA-MM-DDThh:mm:ss`, sem fuso. A primeira carga pode usar `1900-01-01T00:00:00`. Sem `alteradoDesde`, ou com valor ilegível, o endpoint não devolve o catálogo.
 
-Quando o pedido traz referências, a comparação ignora espaços nas extremidades e maiúsculas. Cada referência pedida aparece na resposta, encontrada ou não. Uma referência em falta não é um erro da consulta.
+A ordem é a da referência. Cada elemento `artigo` vem com `encontrado=true`, `referenciaPedida` igual a `referencia`, a designação (`st.design`), a unidade, o indicador `usaLote` e o preço da tabela 1 do artigo. `G00001` entra nesta lista quando existir em `st` e cumprir o filtro. O elemento `total` indica quantas referências foram devolvidas.
+
+Quando o pedido traz referências, `alteradoDesde` não se envia e o endpoint não filtra por data. A comparação ignora espaços nas extremidades e maiúsculas. Cada referência pedida aparece na resposta, encontrada ou não. Uma referência em falta não é um erro da consulta.
 
 Quando o artigo existe, a resposta inclui a referência tal como está gravada em `st.ref`, a designação (`st.design`), a unidade, o indicador `usaLote` e o preço de tabela aplicável. A emissão usa essa referência exata.
 
@@ -279,6 +287,7 @@ Pedido com NIF. As outras tags vão no mesmo pedido e ficam vazias. O endpoint u
   <telefone></telefone>
   <numero></numero>
   <estabelecimento></estabelecimento>
+  <alteradoDesde></alteradoDesde>
 </consultaContacto>
 ```
 
@@ -331,6 +340,7 @@ O mesmo pedido, com outra tag preenchida. Em cada caso o endpoint escolhe o prim
   <telefone></telefone>
   <numero></numero>
   <estabelecimento></estabelecimento>
+  <alteradoDesde></alteradoDesde>
 </consultaContacto>
 ```
 
@@ -342,6 +352,7 @@ O mesmo pedido, com outra tag preenchida. Em cada caso o endpoint escolhe o prim
   <telefone>+351 210 000 000</telefone>
   <numero></numero>
   <estabelecimento></estabelecimento>
+  <alteradoDesde></alteradoDesde>
 </consultaContacto>
 ```
 
@@ -353,10 +364,11 @@ O mesmo pedido, com outra tag preenchida. Em cada caso o endpoint escolhe o prim
   <telefone></telefone>
   <numero>12045</numero>
   <estabelecimento></estabelecimento>
+  <alteradoDesde></alteradoDesde>
 </consultaContacto>
 ```
 
-Pedido com todas as tags vazias. O endpoint devolve o catálogo de todos os contactos:
+Pedido com as tags de pesquisa vazias e `alteradoDesde` preenchido. O endpoint devolve os contactos introduzidos ou alterados depois desse instante:
 
 ```xml
 <?xml version="1.0" encoding="UTF-8"?>
@@ -366,10 +378,11 @@ Pedido com todas as tags vazias. O endpoint devolve o catálogo de todos os cont
   <telefone></telefone>
   <numero></numero>
   <estabelecimento></estabelecimento>
+  <alteradoDesde>2026-10-01T00:00:00</alteradoDesde>
 </consultaContacto>
 ```
 
-A resposta seguinte ilustra a forma. Na instalação, `contactos` contém todas as fichas e `total` é o número real de contactos.
+A resposta seguinte ilustra a forma. Na instalação, `contactos` contém as fichas introduzidas ou alteradas depois de `alteradoDesde` e `total` é o número real dessas fichas.
 
 ```xml
 <?xml version="1.0" encoding="UTF-8"?>
@@ -442,14 +455,16 @@ A resposta seguinte ilustra a forma. Na instalação, `contactos` contém todas 
 
 A segunda referência, na emissão, vai como `G00001` com designação própria.
 
-Pedido vazio, para receber todas as referências disponíveis:
+Pedido sem referências, para receber as referências disponíveis introduzidas ou alteradas depois de `alteradoDesde`:
 
 ```xml
 <?xml version="1.0" encoding="UTF-8"?>
-<consultaArtigos versao="1.0"/>
+<consultaArtigos versao="1.0">
+  <alteradoDesde>2026-10-01T00:00:00</alteradoDesde>
+</consultaArtigos>
 ```
 
-A resposta seguinte ilustra a forma. Na instalação, `artigos` contém todas as referências disponíveis e `total` é o número real de fichas.
+A resposta seguinte ilustra a forma. Na instalação, `artigos` contém as referências disponíveis que cumprem o filtro e `total` é o número real dessas fichas.
 
 ```xml
 <?xml version="1.0" encoding="UTF-8"?>
@@ -680,6 +695,8 @@ O script valida o pedido completo antes de gravar. A gravação do contacto novo
 | `ID_ORIGEM_INVALIDO` | Vazio, longo demais ou com caracteres fora do conjunto permitido |
 | `ID_ORIGEM_CONFLITO` | O mesmo `idOrigem` já existe com conteúdo diferente |
 | `DATA_INVALIDA` | Data ausente, ilegível ou em período fechado no PHC |
+| `ALTERADO_DESDE_OBRIGATORIO` | Catálogo de contactos ou de artigos pedido sem `alteradoDesde` |
+| `ALTERADO_DESDE_INVALIDO` | `alteradoDesde` ilegível ou com data inexistente |
 | `RESPONSAVEL_INVALIDO` | Falta o nome, ou faltam telefone e email ao mesmo tempo |
 | `UTILIZADOR_ATENDIMENTO_INVALIDO` | O nome não existe na tabela de atendimento interno |
 | `ARTIGO_NAO_CATALOGADO` | A referência da linha não existe e não é `G00001` |
@@ -733,8 +750,8 @@ O conteúdo comparado é o XML canónico: elementos na ordem do esquema, sem esp
 ## 14. Critério de aceitação
 
 1. Consulta por NIF, email, telefone ou número interno existente devolve a ficha, com `numero`, `nome`, `morada`, `codigoPostal` e `nif`.
-2. Consulta sem correspondência devolve `encontrado=false`. Consulta sem parâmetros devolve todos os contactos.
-3. Consulta com referências devolve cada uma, encontrada ou não. Consulta sem referências devolve todas as referências disponíveis, com `encontrado=true`.
+2. Consulta sem correspondência devolve `encontrado=false`. Consulta de contactos sem parâmetros, com `alteradoDesde`, devolve os contactos introduzidos ou alterados depois desse instante.
+3. Consulta com referências devolve cada uma, encontrada ou não. Consulta de artigos sem referências, com `alteradoDesde`, devolve as referências disponíveis introduzidas ou alteradas depois desse instante.
 4. Emissão com `numero` cria o dossier ligado a esse contacto e devolve `obrano` e `bostamp`.
 5. Emissão sem `numero`, com nome, morada, localidade, código postal e NIF, cria a ficha e o dossier, e devolve o `numero` novo.
 6. O dossier fica com data, responsável, telefone ou email, e utilizador de atendimento.
