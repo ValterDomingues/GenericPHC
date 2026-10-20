@@ -210,6 +210,7 @@ A ordem é a da referência. Cada elemento `artigo` com `encontrado=true` traz a
 |---|---|---|
 | `referenciaFornecedor` | `st.forref` | Referência do artigo no fornecedor habitual. Vazio se a ficha não a tiver |
 | `nomeFornecedor` | `fl.nome` | Nome do fornecedor habitual. O número está em `st.fornecedor` e a ficha é a da tabela `fl` com esse número e estabelecimento 0. Vazio se o artigo não tiver fornecedor habitual |
+| `numeroFornecedor` | `st.fornecedor` | Número do fornecedor habitual. Zero ou vazio quando o artigo não tem fornecedor habitual. É a chave para agrupar a taxa energética |
 | `familia` | `st.familia` | Código da família do artigo |
 | `nomeFamilia` | `st.faminome` | Designação da família |
 | `subfamilia` | `st.usr2` | Subfamília do artigo. Vazio se a ficha não a tiver |
@@ -247,6 +248,44 @@ O lote enviado tem de existir para essa referência (tabela `se`). Um lote envia
 | `lote` | Não se envia |
 
 `G00001` é um artigo já existente no PHC, criado para linhas fora de catálogo. A emissão não cria artigos. A designação enviada fica na linha do dossier (`bi.design`) e não altera a designação genérica em `st`.
+
+### 6.4 Taxa energética
+
+Quando o fornecedor habitual de um artigo tem uma taxa energética, a proposta leva uma linha dessa taxa. A plataforma calcula a linha. O PHC grava-a como as restantes.
+
+Cada taxa está associada ao número do fornecedor habitual (`numeroFornecedor`, `st.fornecedor`) e tem:
+
+| Campo | Conteúdo |
+|---|---|
+| `descricao` | Texto da taxa. Passa a ser a designação da linha |
+| `tipo` | `EUR_M2` ou `PERCENTAGEM` |
+| `valor` | Decimal com 2 casas. Em `EUR_M2` é euros por m2. Em `PERCENTAGEM` é a percentagem |
+
+Um fornecedor pode ter várias taxas. Cada taxa produz no máximo uma linha, com a referência fixa `TXENERG`. `TXENERG` existe em `st`, sem movimento de stock, como `G00001`. A designação genérica de `TXENERG` não é usada: a linha leva a `descricao` da taxa. Não leva lote nem descontos.
+
+Entram na base de cálculo as linhas de artigo de catálogo desse fornecedor. Ficam de fora as linhas `G00001`, as linhas `TXENERG` e os artigos sem fornecedor habitual.
+
+O montante de uma linha de artigo é `quantidade × preco × (1 − desconto1 / 100) × (1 − desconto2 / 100)`, arredondado para 2 casas, metade para cima. O preço é o que a linha envia. Se a linha não enviar preço, usa-se o preço devolvido pela consulta do artigo.
+
+| Tipo | Base | Linha `TXENERG` |
+|---|---|---|
+| `EUR_M2` | Soma das quantidades dos artigos desse fornecedor cuja unidade, sem espaços e sem distinguir maiúsculas, é `M2` | `quantidade` = essa soma; `preco` = `valor` |
+| `PERCENTAGEM` | Soma dos montantes em euros das referências desse fornecedor | `quantidade` = 1; `preco` = base × `valor` / 100, arredondado para 2 casas |
+
+A linha só é adicionada quando a base é maior que zero e, no tipo `PERCENTAGEM`, o preço calculado é maior que zero. As linhas `TXENERG` ficam depois das linhas de artigo, ordenadas pelo número do fornecedor e, dentro deste, pela descrição da taxa.
+
+Exemplo. O artigo `MAT-100` do fornecedor 100 tem unidade `M2`, quantidade 12,5, preço 15,50, desconto 1 de 10% e desconto 2 de 5%. O montante da linha é 165,66 euros. Uma taxa `EUR_M2` de 1,50 euros com a descrição «Taxa energética de revestimento» gera:
+
+```xml
+<linha>
+  <referencia>TXENERG</referencia>
+  <designacao>Taxa energética de revestimento</designacao>
+  <quantidade>12.5</quantidade>
+  <preco>1.50</preco>
+</linha>
+```
+
+Uma taxa `PERCENTAGEM` de 2,50 sobre o mesmo montante gera uma linha `TXENERG` com quantidade 1 e preço 4,14.
 
 A proposta tem pelo menos uma linha e no máximo 500. A ordem das linhas no XML é a ordem no dossier.
 
@@ -491,6 +530,7 @@ A resposta seguinte ilustra a forma. Na instalação, `contactos` contém as fic
       <preco>15.50</preco>
       <referenciaFornecedor>FOR-100</referenciaFornecedor>
       <nomeFornecedor>Alumínios do Norte Lda</nomeFornecedor>
+      <numeroFornecedor>100</numeroFornecedor>
       <familia>PERFIL</familia>
       <nomeFamilia>Perfis de alumínio</nomeFamilia>
       <subfamilia>40MM</subfamilia>
@@ -533,6 +573,7 @@ A resposta seguinte ilustra a forma. Na instalação, `artigos` contém as refer
       <preco>0</preco>
       <referenciaFornecedor></referenciaFornecedor>
       <nomeFornecedor></nomeFornecedor>
+      <numeroFornecedor>0</numeroFornecedor>
       <familia></familia>
       <nomeFamilia></nomeFamilia>
       <subfamilia></subfamilia>
@@ -548,6 +589,7 @@ A resposta seguinte ilustra a forma. Na instalação, `artigos` contém as refer
       <preco>15.50</preco>
       <referenciaFornecedor>FOR-100</referenciaFornecedor>
       <nomeFornecedor>Alumínios do Norte Lda</nomeFornecedor>
+      <numeroFornecedor>100</numeroFornecedor>
       <familia>PERFIL</familia>
       <nomeFamilia>Perfis de alumínio</nomeFamilia>
       <subfamilia>40MM</subfamilia>
@@ -604,6 +646,12 @@ A resposta seguinte ilustra a forma. Na instalação, `artigos` contém as refer
       <referencia>G00001</referencia>
       <designacao>Suporte especial a fabricar, medida 1200x300</designacao>
       <quantidade>1</quantidade>
+    </linha>
+    <linha>
+      <referencia>TXENERG</referencia>
+      <designacao>Taxa energética de revestimento</designacao>
+      <quantidade>12.5</quantidade>
+      <preco>1.50</preco>
     </linha>
   </linhas>
 </emitirProposta>
@@ -814,14 +862,14 @@ O script valida o pedido completo antes de gravar. A gravação do contacto novo
 | `ALTERADO_DESDE_INVALIDO` | `alteradoDesde` ilegível ou com data inexistente |
 | `RESPONSAVEL_INVALIDO` | Falta o nome, ou faltam telefone e email ao mesmo tempo |
 | `UTILIZADOR_ATENDIMENTO_INVALIDO` | `atendimento/numero` não existe na tabela `atendimento` |
-| `ARTIGO_NAO_CATALOGADO` | A referência da linha não existe e não é `G00001` |
-| `ARTIGO_GENERICO_SEM_DESCRICAO` | Linha `G00001` sem designação |
-| `ARTIGO_GENERICO_INDISPONIVEL` | `G00001` não está criado no PHC |
+| `ARTIGO_NAO_CATALOGADO` | A referência da linha não existe e não é `G00001` nem `TXENERG` |
+| `ARTIGO_GENERICO_SEM_DESCRICAO` | Linha `G00001` ou `TXENERG` sem designação |
+| `ARTIGO_GENERICO_INDISPONIVEL` | `G00001` ou `TXENERG` não está criado no PHC |
 | `QUANTIDADE_INVALIDA` | Quantidade ausente ou não positiva |
 | `PRECO_INVALIDO` | Preço negativo |
 | `DESCONTO_INVALIDO` | Desconto fora de 0 a 100 |
 | `LOTE_INVALIDO` | O lote não existe para a referência |
-| `LOTE_NAO_APLICAVEL` | Lote enviado para artigo sem lotes, ou para `G00001` |
+| `LOTE_NAO_APLICAVEL` | Lote enviado para artigo sem lotes, para `G00001` ou para `TXENERG` |
 | `LINHAS_INVALIDAS` | Zero linhas ou mais de 500 |
 | `COORDENADAS_INVALIDAS` | Par incompleto ou valor fora dos limites |
 | `ERRO_PHC` | A Framework recusou a gravação. A `mensagem` traz o texto devolvido pelo PHC |
@@ -850,6 +898,7 @@ O conteúdo comparado é o XML canónico: elementos na ordem do esquema, sem esp
 | Nome físico da tabela de atendimento interno e coluna do nome | Tabela `atendimento`, colunas `numero`, `nome`, `iniciais`, `telemovel` e `email` |
 | Campo PHC usado em cada linha da secção 9.2 | |
 | `G00001` criado e sem movimento de stock | |
+| `TXENERG` criado e sem movimento de stock | |
 | IVA de `G00001` | |
 | Preço do XML sem IVA | Sim, salvo configuração contrária do dossier |
 | Índice único em `u_idorig` | |
@@ -872,7 +921,7 @@ O conteúdo comparado é o XML canónico: elementos na ordem do esquema, sem esp
 6. O dossier fica com data, responsável, telefone ou email, e o número e o nome do registo de atendimento.
 7. Observações, requisição, obra e morada de descarga, quando enviadas, aparecem no dossier, incluindo coordenadas.
 8. Linha de artigo existente grava referência e quantidade. Preço, os dois descontos e o lote só aparecem quando foram enviados.
-9. Linha desconhecida grava `G00001` e a designação enviada.
+9. Linha desconhecida grava `G00001` e a designação enviada. Linha de taxa energética grava `TXENERG`, a descrição da taxa e o valor calculado.
 10. Repetir o mesmo `idOrigem` não cria um segundo dossier.
-11. Atendimento desconhecido, quantidade inválida ou `G00001` sem designação devolvem o código desta especificação e não gravam dossier.
+11. Atendimento desconhecido, quantidade inválida ou `G00001` ou `TXENERG` sem designação devolvem o código desta especificação e não gravam dossier.
 12. A consulta de sessão devolve `numero`, `nome`, `iniciais`, `telemovel` e `email`. Com todas as tags vazias devolve a base completa da tabela `atendimento`.

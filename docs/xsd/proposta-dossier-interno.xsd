@@ -298,6 +298,7 @@
       <xs:element name="preco" type="preco" minOccurs="0"/>
       <xs:element name="referenciaFornecedor" type="xs:string" minOccurs="0"/>
       <xs:element name="nomeFornecedor" type="xs:string" minOccurs="0"/>
+      <xs:element name="numeroFornecedor" type="xs:nonNegativeInteger" minOccurs="0"/>
       <xs:element name="familia" type="xs:string" minOccurs="0"/>
       <xs:element name="nomeFamilia" type="xs:string" minOccurs="0"/>
       <xs:element name="subfamilia" type="xs:string" minOccurs="0"/>

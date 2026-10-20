@@ -43,5 +43,11 @@
       <designacao>Suporte especial a fabricar, medida 1200x300</designacao>
       <quantidade>1</quantidade>
     </linha>
+    <linha>
+      <referencia>TXENERG</referencia>
+      <designacao>Taxa energética de revestimento</designacao>
+      <quantidade>12.5</quantidade>
+      <preco>1.50</preco>
+    </linha>
   </linhas>
 </emitirProposta>
