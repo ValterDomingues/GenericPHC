@@ -13,7 +13,9 @@
     <nome>Rui Costa</nome>
     <email>rui.costa@novametal.pt</email>
   </responsavel>
-  <utilizadorAtendimento>João Matobra</utilizadorAtendimento>
+  <atendimento>
+    <numero>12</numero>
+  </atendimento>
   <linhas>
     <linha>
       <referencia>G00001</referencia>

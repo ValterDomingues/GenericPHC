@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<consultaSessaoResposta versao="1.0">
+  <sucesso>true</sucesso>
+  <total>1</total>
+  <atendimentos>
+    <atendimento>
+      <numero>12</numero>
+      <nome>João Matobra</nome>
+      <iniciais>JM</iniciais>
+      <telemovel>910000000</telemovel>
+      <email>joao.matobra@matobra.pt</email>
+    </atendimento>
+  </atendimentos>
+</consultaSessaoResposta>

@@ -16,7 +16,9 @@
     <telefone>+351210000000</telefone>
     <email>ana.silva@oficinasdotejo.pt</email>
   </responsavel>
-  <utilizadorAtendimento>João Matobra</utilizadorAtendimento>
+  <atendimento>
+    <numero>12</numero>
+  </atendimento>
   <observacoes>Entregar na obra até sexta.</observacoes>
   <requisicao>REQ-778</requisicao>
   <obra>OB-2026-014</obra>

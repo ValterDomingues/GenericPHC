@@ -24,10 +24,11 @@ O resultado dessas consultas determina o conteúdo do XML de emissão.
 
 ## 2. Âmbito
 
-Entram neste contrato três operações:
+Entram neste contrato quatro operações:
 
 | Código do script (`code`) | Função |
 |---|---|
+| `MATOBRA_CONSULTA_SESSAO` | Listar ou localizar os registos da tabela `atendimento` para mapear quem emite a proposta |
 | `MATOBRA_CONSULTA_CONTACTO` | Procurar um contacto por NIF, email, telefone ou número interno, ou listar o catálogo |
 | `MATOBRA_CONSULTA_ARTIGO` | Verificar referências de artigo ou listar as referências disponíveis |
 | `MATOBRA_EMITIR_PROPOSTA` | Criar o dossier interno da proposta |
@@ -48,7 +49,7 @@ Método: `RunCode`.
 |---|---|
 | `userName` | Utilizador técnico de integração |
 | `password` | Palavra-passe desse utilizador |
-| `code` | Um dos três códigos da tabela anterior |
+| `code` | Um dos quatro códigos da tabela anterior |
 | `parameter` | Mensagem XML desta especificação |
 
 O valor de `parameter` chega ao programa interno do script na variável `mstamp`. O script devolve uma string. Essa string é o XML de resposta definido neste documento.
@@ -61,6 +62,14 @@ Uma rejeição de negócio continua a ser uma resposta SOAP com sucesso de trans
 
 ```text
 Software externo                         PHC CS
+      |                                    |
+      |  MATOBRA_CONSULTA_SESSAO           |
+      |  (credenciais da plataforma)       |
+      |----------------------------------->|
+      |  registos de atendimento           |
+      |<-----------------------------------|
+      |                                    |
+      |  Mapeia a pessoa da área reservada |
       |                                    |
       |  MATOBRA_CONSULTA_CONTACTO         |
       |----------------------------------->|
@@ -81,7 +90,9 @@ Software externo                         PHC CS
       |<-----------------------------------|
 ```
 
-A emissão só segue depois das duas consultas. O software externo guarda `idOrigem`, `bostamp`, `ndos`, `boano`, `obrano` e o `numero` do contacto devolvido.
+A consulta de sessão autentica-se com as credenciais da plataforma e devolve a base da tabela `atendimento`. A plataforma associa a pessoa da área reservada a um desses registos, por email, telemóvel, iniciais ou nome. A emissão usa o `numero` desse registo. A consulta de sessão pode ser feita no acesso à área reservada e reutilizada enquanto a base não mudar.
+
+A emissão da proposta segue depois das consultas de contacto e de artigo. O software externo guarda `idOrigem`, `bostamp`, `ndos`, `boano`, `obrano`, o `numero` do contacto e o `numero` de atendimento.
 
 ## 5. Contacto
 
@@ -252,15 +263,40 @@ A proposta tem pelo menos uma linha e no máximo 500. A ordem das linhas no XML 
 | `data` | Data da proposta, `AAAA-MM-DD`, no calendário de Lisboa |
 | `responsavel/nome` | Nome da pessoa do contacto responsável pelo pedido |
 | `responsavel/telefone` ou `responsavel/email` | Pelo menos um. Os dois podem vir preenchidos |
-| `utilizadorAtendimento` | Nome do utilizador da tabela de atendimento interno da Matobra que emitiu a proposta |
+| `atendimento/numero` | Número do registo da tabela `atendimento` da pessoa da Matobra que emite a proposta |
 
-O responsável é a pessoa do lado do contacto. O utilizador de atendimento é a pessoa da Matobra. São dados diferentes.
+O responsável é a pessoa do lado do contacto. O atendimento é a pessoa da Matobra. São dados diferentes.
 
-`utilizadorAtendimento` tem de coincidir com um nome ativo dessa tabela, sem diferenças de maiúsculas e sem espaços nas extremidades. O software externo não consulta essa tabela: envia o nome, e o PHC valida.
+`atendimento/numero` tem de ser um `numero` devolvido pela consulta de sessão. O endpoint confirma-o na tabela `atendimento` e grava no dossier o número e o nome desse registo. A plataforma não envia o nome livre.
 
 O telefone aceita dígitos, espaços e o prefixo `+`. O email tem de ter o formato habitual `local@dominio`.
 
-### 7.3 Elementos opcionais
+### 7.3 Consulta de sessão
+
+A plataforma externa autentica-se com as credenciais de integração e chama `MATOBRA_CONSULTA_SESSAO`. O pedido é sempre o mesmo e tem uma tag por coluna da tabela `atendimento`: `numero`, `nome`, `iniciais`, `telemovel` e `email`. A tag vai vazia quando não é usada como filtro. O endpoint escolhe um único critério e ignora os restantes:
+
+1. `numero`, quando tem conteúdo.
+2. `email`, quando `numero` está vazio e `email` tem conteúdo.
+3. `telemovel`, quando os anteriores estão vazios e `telemovel` tem conteúdo. A comparação usa só os dígitos e exige pelo menos 6.
+4. `iniciais`, quando os anteriores estão vazios e `iniciais` tem conteúdo. A comparação ignora maiúsculas e espaços nas extremidades.
+5. `nome`, quando os anteriores estão vazios e `nome` tem conteúdo. A comparação ignora maiúsculas e espaços nas extremidades.
+6. A base completa, quando as cinco tags estão vazias.
+
+```xml
+<consultaSessao versao="1.0">
+  <numero></numero>
+  <nome></nome>
+  <iniciais></iniciais>
+  <telemovel></telemovel>
+  <email></email>
+</consultaSessao>
+```
+
+A resposta traz os registos disponíveis para preencher o atendimento da proposta. Cada registo tem `numero`, `nome`, `iniciais`, `telemovel` e `email`. Estes cinco dados são a base de mapeamento para a área reservada da pessoa que emite a proposta: a plataforma associa a sua conta ao registo com o mesmo email, telemóvel, iniciais ou nome e guarda o `numero` para a emissão.
+
+A tabela no PHC chama-se `atendimento`. As colunas são `numero`, `nome`, `iniciais`, `telemovel` e `email`. Uma pesquisa sem correspondência devolve `sucesso=true`, `total=0` e a lista vazia. Um valor inválido no critério escolhido devolve o erro e o endpoint não passa ao critério seguinte.
+
+### 7.4 Elementos opcionais
 
 | Elemento | Conteúdo |
 |---|---|
@@ -542,7 +578,9 @@ A resposta seguinte ilustra a forma. Na instalação, `artigos` contém as refer
     <telefone>+351210000000</telefone>
     <email>ana.silva@oficinasdotejo.pt</email>
   </responsavel>
-  <utilizadorAtendimento>João Matobra</utilizadorAtendimento>
+  <atendimento>
+    <numero>12</numero>
+  </atendimento>
   <observacoes>Entregar na obra até sexta.</observacoes>
   <requisicao>REQ-778</requisicao>
   <obra>OB-2026-014</obra>
@@ -591,7 +629,9 @@ A diferença está no bloco `contacto`: não existe `numero`. Os restantes eleme
     <nome>Rui Costa</nome>
     <email>rui.costa@novametal.pt</email>
   </responsavel>
-  <utilizadorAtendimento>João Matobra</utilizadorAtendimento>
+  <atendimento>
+    <numero>12</numero>
+  </atendimento>
   <linhas>
     <linha>
       <referencia>G00001</referencia>
@@ -635,14 +675,61 @@ Resposta de erro:
   <erros>
     <erro>
       <codigo>UTILIZADOR_ATENDIMENTO_INVALIDO</codigo>
-      <mensagem>O utilizador de atendimento não existe na tabela interna da Matobra.</mensagem>
-      <elemento>utilizadorAtendimento</elemento>
+      <mensagem>O número de atendimento não existe na tabela atendimento.</mensagem>
+      <elemento>atendimento/numero</elemento>
     </erro>
   </erros>
 </emitirPropostaResposta>
 ```
 
 Quando há vários erros de validação, a resposta inclui-os todos e o PHC não grava nada.
+
+### 8.6 Consulta de sessão
+
+Pedido da base completa, para mapear a área reservada:
+
+```xml
+<?xml version="1.0" encoding="UTF-8"?>
+<consultaSessao versao="1.0">
+  <numero></numero>
+  <nome></nome>
+  <iniciais></iniciais>
+  <telemovel></telemovel>
+  <email></email>
+</consultaSessao>
+```
+
+Pedido pelo email da pessoa que está na área reservada. O endpoint usa o email porque `numero` está vazio:
+
+```xml
+<?xml version="1.0" encoding="UTF-8"?>
+<consultaSessao versao="1.0">
+  <numero></numero>
+  <nome></nome>
+  <iniciais></iniciais>
+  <telemovel></telemovel>
+  <email>joao.matobra@matobra.pt</email>
+</consultaSessao>
+```
+
+```xml
+<?xml version="1.0" encoding="UTF-8"?>
+<consultaSessaoResposta versao="1.0">
+  <sucesso>true</sucesso>
+  <total>1</total>
+  <atendimentos>
+    <atendimento>
+      <numero>12</numero>
+      <nome>João Matobra</nome>
+      <iniciais>JM</iniciais>
+      <telemovel>910000000</telemovel>
+      <email>joao.matobra@matobra.pt</email>
+    </atendimento>
+  </atendimentos>
+</consultaSessaoResposta>
+```
+
+A emissão envia `<atendimento><numero>12</numero></atendimento>`.
 
 ## 9. Mapeamento para o PHC
 
@@ -683,7 +770,8 @@ Estes dados não têm coluna standard garantida no dossier. Criam-se na configur
 | `responsavel/nome` | `u_respnome` | Caractere (55) |
 | `responsavel/telefone` | `u_resptel` | Caractere (60) |
 | `responsavel/email` | `u_respemail` | Caractere (100) |
-| `utilizadorAtendimento` | `u_atend` | Caractere (55) |
+| `atendimento/numero` | `u_atendno` | Numérico. Chave do registo em `atendimento` |
+| `atendimento/nome` | `u_atend` | Caractere (55). O endpoint copia `atendimento.nome` no momento da gravação. A plataforma não o envia |
 | `requisicao` | `u_requis` | Caractere (40) |
 | `obra` | `u_obra` | Caractere (40) |
 | `descarga/morada` | Campo de morada de descarga do dossier, ou `u_descargamor` | Caractere (55) |
@@ -725,7 +813,7 @@ O script valida o pedido completo antes de gravar. A gravação do contacto novo
 | `ALTERADO_DESDE_OBRIGATORIO` | Catálogo de contactos ou de artigos pedido sem `alteradoDesde` |
 | `ALTERADO_DESDE_INVALIDO` | `alteradoDesde` ilegível ou com data inexistente |
 | `RESPONSAVEL_INVALIDO` | Falta o nome, ou faltam telefone e email ao mesmo tempo |
-| `UTILIZADOR_ATENDIMENTO_INVALIDO` | O nome não existe na tabela de atendimento interno |
+| `UTILIZADOR_ATENDIMENTO_INVALIDO` | `atendimento/numero` não existe na tabela `atendimento` |
 | `ARTIGO_NAO_CATALOGADO` | A referência da linha não existe e não é `G00001` |
 | `ARTIGO_GENERICO_SEM_DESCRICAO` | Linha `G00001` sem designação |
 | `ARTIGO_GENERICO_INDISPONIVEL` | `G00001` não está criado no PHC |
@@ -759,7 +847,7 @@ O conteúdo comparado é o XML canónico: elementos na ordem do esquema, sem esp
 | URL de `wscript.asmx` | |
 | Utilizador técnico | |
 | `ndos` do dossier Proposta | |
-| Nome físico da tabela de atendimento interno e coluna do nome | |
+| Nome físico da tabela de atendimento interno e coluna do nome | Tabela `atendimento`, colunas `numero`, `nome`, `iniciais`, `telemovel` e `email` |
 | Campo PHC usado em cada linha da secção 9.2 | |
 | `G00001` criado e sem movimento de stock | |
 | IVA de `G00001` | |
@@ -781,9 +869,10 @@ O conteúdo comparado é o XML canónico: elementos na ordem do esquema, sem esp
 3. Consulta com referências devolve cada uma, encontrada ou não. Quando existe, a resposta inclui referência do fornecedor habitual, nome desse fornecedor, família, subfamília e marca. Consulta de artigos sem referências, com `alteradoDesde`, devolve as referências disponíveis introduzidas ou alteradas depois desse instante, com os mesmos dados.
 4. Emissão com `numero` cria o dossier ligado a esse contacto e devolve `obrano` e `bostamp`.
 5. Emissão sem `numero`, com nome, morada, localidade, código postal e NIF, cria a ficha e o dossier, e devolve o `numero` novo.
-6. O dossier fica com data, responsável, telefone ou email, e utilizador de atendimento.
+6. O dossier fica com data, responsável, telefone ou email, e o número e o nome do registo de atendimento.
 7. Observações, requisição, obra e morada de descarga, quando enviadas, aparecem no dossier, incluindo coordenadas.
 8. Linha de artigo existente grava referência e quantidade. Preço, os dois descontos e o lote só aparecem quando foram enviados.
 9. Linha desconhecida grava `G00001` e a designação enviada.
 10. Repetir o mesmo `idOrigem` não cria um segundo dossier.
-11. Utilizador de atendimento desconhecido, quantidade inválida ou `G00001` sem designação devolvem o código desta especificação e não gravam dossier.
+11. Atendimento desconhecido, quantidade inválida ou `G00001` sem designação devolvem o código desta especificação e não gravam dossier.
+12. A consulta de sessão devolve `numero`, `nome`, `iniciais`, `telemovel` e `email`. Com todas as tags vazias devolve a base completa da tabela `atendimento`.

@@ -109,6 +109,85 @@
     </xs:sequence>
   </xs:complexType>
 
+  <xs:element name="consultaSessao">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element name="numero">
+          <xs:simpleType>
+            <xs:restriction base="xs:string">
+              <xs:pattern value="|0|[1-9][0-9]*"/>
+            </xs:restriction>
+          </xs:simpleType>
+        </xs:element>
+        <xs:element name="nome">
+          <xs:simpleType>
+            <xs:restriction base="xs:string">
+              <xs:maxLength value="55"/>
+            </xs:restriction>
+          </xs:simpleType>
+        </xs:element>
+        <xs:element name="iniciais">
+          <xs:simpleType>
+            <xs:restriction base="xs:string">
+              <xs:maxLength value="10"/>
+            </xs:restriction>
+          </xs:simpleType>
+        </xs:element>
+        <xs:element name="telemovel">
+          <xs:simpleType>
+            <xs:restriction base="xs:string">
+              <xs:maxLength value="60"/>
+              <xs:pattern value="|[0-9+() .\-]{6,60}"/>
+            </xs:restriction>
+          </xs:simpleType>
+        </xs:element>
+        <xs:element name="email">
+          <xs:simpleType>
+            <xs:restriction base="xs:string">
+              <xs:maxLength value="100"/>
+              <xs:pattern value="|[^@\s]+@[^@\s]+\.[^@\s]+"/>
+            </xs:restriction>
+          </xs:simpleType>
+        </xs:element>
+      </xs:sequence>
+      <xs:attribute name="versao" type="versao" use="required"/>
+    </xs:complexType>
+  </xs:element>
+
+  <xs:element name="consultaSessaoResposta">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element name="sucesso" type="xs:boolean"/>
+        <xs:element name="total" type="xs:nonNegativeInteger" minOccurs="0"/>
+        <xs:element name="atendimentos" minOccurs="0">
+          <xs:complexType>
+            <xs:sequence>
+              <xs:element name="atendimento" minOccurs="0" maxOccurs="unbounded">
+                <xs:complexType>
+                  <xs:sequence>
+                    <xs:element name="numero" type="xs:positiveInteger"/>
+                    <xs:element name="nome" type="xs:string"/>
+                    <xs:element name="iniciais" type="xs:string" minOccurs="0"/>
+                    <xs:element name="telemovel" type="xs:string" minOccurs="0"/>
+                    <xs:element name="email" type="xs:string" minOccurs="0"/>
+                  </xs:sequence>
+                </xs:complexType>
+              </xs:element>
+            </xs:sequence>
+          </xs:complexType>
+        </xs:element>
+        <xs:element name="erros" minOccurs="0">
+          <xs:complexType>
+            <xs:sequence>
+              <xs:element name="erro" type="erro" maxOccurs="unbounded"/>
+            </xs:sequence>
+          </xs:complexType>
+        </xs:element>
+      </xs:sequence>
+      <xs:attribute name="versao" type="versao" use="required"/>
+    </xs:complexType>
+  </xs:element>
+
   <xs:element name="consultaContacto">
     <xs:complexType>
       <xs:sequence>
@@ -313,7 +392,13 @@
         <xs:element name="data" type="xs:date"/>
         <xs:element name="contacto" type="contactoEmissao"/>
         <xs:element name="responsavel" type="responsavel"/>
-        <xs:element name="utilizadorAtendimento" type="texto55"/>
+        <xs:element name="atendimento">
+          <xs:complexType>
+            <xs:sequence>
+              <xs:element name="numero" type="xs:positiveInteger"/>
+            </xs:sequence>
+          </xs:complexType>
+        </xs:element>
         <xs:element name="observacoes" minOccurs="0">
           <xs:simpleType>
             <xs:restriction base="xs:string">

@@ -5,8 +5,8 @@
   <erros>
     <erro>
       <codigo>UTILIZADOR_ATENDIMENTO_INVALIDO</codigo>
-      <mensagem>O utilizador de atendimento não existe na tabela interna da Matobra.</mensagem>
-      <elemento>utilizadorAtendimento</elemento>
+      <mensagem>O número de atendimento não existe na tabela atendimento.</mensagem>
+      <elemento>atendimento/numero</elemento>
     </erro>
   </erros>
 </emitirPropostaResposta>
