@@ -102,7 +102,9 @@
       <xs:element name="morada" type="texto55"/>
       <xs:element name="localidade" type="texto55"/>
       <xs:element name="codigoPostal" type="codigoPostal"/>
-      <xs:element name="nif" type="nif"/>
+      <xs:element name="nif" type="xs:string" minOccurs="0"/>
+      <xs:element name="email" type="xs:string" minOccurs="0"/>
+      <xs:element name="telefone" type="xs:string" minOccurs="0"/>
       <xs:element name="ativo" type="xs:boolean"/>
     </xs:sequence>
   </xs:complexType>
@@ -111,6 +113,24 @@
     <xs:complexType>
       <xs:sequence>
         <xs:element name="nif" type="nif" minOccurs="0"/>
+        <xs:element name="email" minOccurs="0">
+          <xs:simpleType>
+            <xs:restriction base="xs:string">
+              <xs:minLength value="3"/>
+              <xs:maxLength value="100"/>
+              <xs:pattern value="[^@\s]+@[^@\s]+\.[^@\s]+"/>
+            </xs:restriction>
+          </xs:simpleType>
+        </xs:element>
+        <xs:element name="telefone" minOccurs="0">
+          <xs:simpleType>
+            <xs:restriction base="xs:string">
+              <xs:minLength value="6"/>
+              <xs:maxLength value="60"/>
+              <xs:pattern value="[0-9+() .\-]+"/>
+            </xs:restriction>
+          </xs:simpleType>
+        </xs:element>
         <xs:element name="numero" type="xs:positiveInteger" minOccurs="0"/>
         <xs:element name="estabelecimento" type="xs:nonNegativeInteger" minOccurs="0"/>
       </xs:sequence>

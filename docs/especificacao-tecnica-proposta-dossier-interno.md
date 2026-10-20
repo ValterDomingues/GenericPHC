@@ -28,7 +28,7 @@ Entram neste contrato três operações:
 
 | Código do script (`code`) | Função |
 |---|---|
-| `MATOBRA_CONSULTA_CONTACTO` | Verificar se o contacto existe e devolver a ficha |
+| `MATOBRA_CONSULTA_CONTACTO` | Procurar um contacto por NIF, email, telefone ou número interno, ou listar o catálogo |
 | `MATOBRA_CONSULTA_ARTIGO` | Verificar referências de artigo ou listar as referências disponíveis |
 | `MATOBRA_EMITIR_PROPOSTA` | Criar o dossier interno da proposta |
 
@@ -89,17 +89,28 @@ A ficha de contacto no PHC CS é a tabela `cl`. A chave técnica é `cl.no` + `c
 
 ### 5.1 Consulta
 
-A consulta aceita `nif`, `numero` ou os dois.
+A consulta aceita quatro parâmetros de pesquisa: `nif`, `email`, `telefone` e `numero` (número interno do PHC, `cl.no`). `estabelecimento` só acompanha `numero`.
 
-| Pedido | Critério |
+O pedido está vazio quando, depois de removidos os espaços, nenhum destes quatro parâmetros tem conteúdo. O pedido seguinte pede o catálogo:
+
+```xml
+<consultaContacto versao="1.0"/>
+```
+
+`estabelecimento` sozinho não chega para filtrar: sem `nif`, `email`, `telefone` e `numero`, a resposta é o catálogo de todos os contactos da tabela `cl`, ativos e inativos, ordenados por `numero` e `estabelecimento`. Cada ficha traz `ativo`. O elemento `total` é o número de contactos devolvidos. `encontrado` é verdadeiro quando `total` é maior que zero.
+
+Quando há parâmetros, todos os que vierem preenchidos aplicam-se em simultâneo.
+
+| Parâmetro | Critério |
 |---|---|
-| `numero` preenchido | Procura `cl.no` e, se vier `estabelecimento`, também `cl.estab`. Sem `estabelecimento`, o valor é 0 |
-| `nif` preenchido | Procura `cl.ncont` igual ao NIF, depois de removidos espaços |
-| Os dois preenchidos | As duas condições em simultâneo |
+| `nif` | `cl.ncont` igual ao NIF, sem espaços. Nove dígitos e dígito de controlo válido (módulo 11). `999999990` não é aceite |
+| `email` | `cl.email` igual ao valor, sem espaços nas extremidades e sem distinguir maiúsculas |
+| `telefone` | Os dígitos do valor coincidem com os dígitos de `cl.telefone` ou de `cl.tlmvl`. O parâmetro tem de conter pelo menos 6 dígitos |
+| `numero` | `cl.no` igual ao número. Com `estabelecimento`, também `cl.estab`. Sem `estabelecimento`, devolve todos os estabelecimentos desse número |
 
-O NIF português tem 9 dígitos e dígito de controlo válido (módulo 11). O NIF `999999990` é o consumidor final genérico e não identifica um contacto desta integração.
+Uma pesquisa sem correspondência é um resultado válido: `sucesso=true`, `encontrado=false`, `total=0`. Não é um erro de NIF nem de número.
 
-A comparação do NIF é exata. O nome não serve para decidir se o contacto existe.
+O nome não serve de parâmetro de pesquisa.
 
 A resposta traz `encontrado` e `total`:
 
@@ -107,9 +118,9 @@ A resposta traz `encontrado` e `total`:
 |---|---|
 | 0 | O contacto não existe. Na emissão o elemento `numero` fica ausente |
 | 1 | O contacto existe. Na emissão seguem `numero`, `estabelecimento`, `nome`, `morada`, `codigoPostal` e `nif` devolvidos por esta consulta |
-| maior que 1 | Há vários estabelecimentos. A emissão fica em espera até o operador escolher um `numero` e um `estabelecimento` |
+| maior que 1 | Há vários contactos. A emissão fica em espera até se escolher um `numero` e um `estabelecimento` |
 
-Um contacto inativo (`cl.inactivo`) vem na lista com `ativo=false`. Esse registo não pode ser usado na emissão.
+Um contacto inativo (`cl.inactivo`) vem na lista com `ativo=false`, inclusive no catálogo. Esse registo não pode ser usado na emissão.
 
 ### 5.2 Emissão quando o contacto existe
 
@@ -272,6 +283,8 @@ Resposta quando existe um único contacto:
       <localidade>Lisboa</localidade>
       <codigoPostal>1200-001</codigoPostal>
       <nif>501964843</nif>
+      <email>geral@oficinasdotejo.pt</email>
+      <telefone>210000000</telefone>
       <ativo>true</ativo>
     </contacto>
   </contactos>
@@ -290,7 +303,74 @@ Resposta quando não existe:
 </consultaContactoResposta>
 ```
 
-`sucesso=false` reserva-se para pedido inválido, por exemplo NIF mal formado. Não existir contacto é um resultado válido, com `sucesso=true` e `encontrado=false`.
+`sucesso=false` reserva-se para pedido inválido, por exemplo NIF mal formado, email sem `@` ou telefone com menos de 6 dígitos. Não existir contacto é um resultado válido, com `sucesso=true` e `encontrado=false`.
+
+Os outros parâmetros de pesquisa usam o mesmo elemento de pedido. Exemplos:
+
+```xml
+<?xml version="1.0" encoding="UTF-8"?>
+<consultaContacto versao="1.0">
+  <email>geral@oficinasdotejo.pt</email>
+</consultaContacto>
+```
+
+```xml
+<?xml version="1.0" encoding="UTF-8"?>
+<consultaContacto versao="1.0">
+  <telefone>+351 210 000 000</telefone>
+</consultaContacto>
+```
+
+```xml
+<?xml version="1.0" encoding="UTF-8"?>
+<consultaContacto versao="1.0">
+  <numero>12045</numero>
+</consultaContacto>
+```
+
+Pedido vazio, para receber o catálogo de todos os contactos:
+
+```xml
+<?xml version="1.0" encoding="UTF-8"?>
+<consultaContacto versao="1.0"/>
+```
+
+A resposta seguinte ilustra a forma. Na instalação, `contactos` contém todas as fichas e `total` é o número real de contactos.
+
+```xml
+<?xml version="1.0" encoding="UTF-8"?>
+<consultaContactoResposta versao="1.0">
+  <sucesso>true</sucesso>
+  <encontrado>true</encontrado>
+  <total>2</total>
+  <contactos>
+    <contacto>
+      <numero>12045</numero>
+      <estabelecimento>0</estabelecimento>
+      <nome>Oficinas do Tejo Lda</nome>
+      <morada>Rua das Flores 10</morada>
+      <localidade>Lisboa</localidade>
+      <codigoPostal>1200-001</codigoPostal>
+      <nif>501964843</nif>
+      <email>geral@oficinasdotejo.pt</email>
+      <telefone>210000000</telefone>
+      <ativo>true</ativo>
+    </contacto>
+    <contacto>
+      <numero>12046</numero>
+      <estabelecimento>0</estabelecimento>
+      <nome>Nova Metalomecânica Lda</nome>
+      <morada>Avenida da República 250</morada>
+      <localidade>Porto</localidade>
+      <codigoPostal>4000-123</codigoPostal>
+      <nif>509876323</nif>
+      <email>rui.costa@novametal.pt</email>
+      <telefone>220000000</telefone>
+      <ativo>true</ativo>
+    </contacto>
+  </contactos>
+</consultaContactoResposta>
+```
 
 ### 8.2 Consulta de artigos
 
@@ -554,7 +634,9 @@ O script valida o pedido completo antes de gravar. A gravação do contacto novo
 |---|---|
 | `XML_INVALIDO` | XML mal formado ou elemento desconhecido |
 | `VERSAO_NAO_SUPORTADA` | `versao` diferente de `1.0` |
-| `NIF_INVALIDO` | NIF ausente, com formato inválido ou igual a `999999990` |
+| `NIF_INVALIDO` | NIF enviado com formato inválido, dígito de controlo errado ou igual a `999999990` |
+| `EMAIL_INVALIDO` | Email enviado sem `@` |
+| `TELEFONE_INVALIDO` | Telefone enviado com menos de 6 dígitos |
 | `CONTACTO_NUMERO_INVALIDO` | `numero` enviado e inexistente, ou contacto inativo |
 | `CONTACTO_AMBIGUO` | A consulta encontrou vários registos e a emissão não identifica `numero` e `estabelecimento` |
 | `CONTACTO_NIF_DIVERGENTE` | O NIF enviado não é o NIF da ficha desse `numero` |
@@ -616,8 +698,8 @@ O conteúdo comparado é o XML canónico: elementos na ordem do esquema, sem esp
 
 ## 14. Critério de aceitação
 
-1. Consulta por NIF existente devolve um contacto com `numero`, `nome`, `morada`, `codigoPostal` e `nif`.
-2. Consulta por NIF inexistente devolve `encontrado=false`.
+1. Consulta por NIF, email, telefone ou número interno existente devolve a ficha, com `numero`, `nome`, `morada`, `codigoPostal` e `nif`.
+2. Consulta sem correspondência devolve `encontrado=false`. Consulta sem parâmetros devolve todos os contactos.
 3. Consulta com referências devolve cada uma, encontrada ou não. Consulta sem referências devolve todas as referências disponíveis, com `encontrado=true`.
 4. Emissão com `numero` cria o dossier ligado a esse contacto e devolve `obrano` e `bostamp`.
 5. Emissão sem `numero`, com nome, morada, localidade, código postal e NIF, cria a ficha e o dossier, e devolve o `numero` novo.
