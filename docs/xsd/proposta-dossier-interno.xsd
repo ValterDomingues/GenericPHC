@@ -146,10 +146,10 @@
   <xs:element name="consultaArtigos">
     <xs:complexType>
       <xs:sequence>
-        <xs:element name="referencias">
+        <xs:element name="referencias" minOccurs="0">
           <xs:complexType>
             <xs:sequence>
-              <xs:element name="referencia" type="referencia" maxOccurs="500"/>
+              <xs:element name="referencia" type="referencia" minOccurs="0" maxOccurs="500"/>
             </xs:sequence>
           </xs:complexType>
         </xs:element>
@@ -174,10 +174,11 @@
     <xs:complexType>
       <xs:sequence>
         <xs:element name="sucesso" type="xs:boolean"/>
+        <xs:element name="total" type="xs:nonNegativeInteger" minOccurs="0"/>
         <xs:element name="artigos" minOccurs="0">
           <xs:complexType>
             <xs:sequence>
-              <xs:element name="artigo" type="artigoResultado" minOccurs="0" maxOccurs="500"/>
+              <xs:element name="artigo" type="artigoResultado" minOccurs="0" maxOccurs="unbounded"/>
             </xs:sequence>
           </xs:complexType>
         </xs:element>

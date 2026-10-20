@@ -29,7 +29,7 @@ Entram neste contrato três operações:
 | Código do script (`code`) | Função |
 |---|---|
 | `MATOBRA_CONSULTA_CONTACTO` | Verificar se o contacto existe e devolver a ficha |
-| `MATOBRA_CONSULTA_ARTIGO` | Verificar referências de artigo |
+| `MATOBRA_CONSULTA_ARTIGO` | Verificar referências de artigo ou listar as referências disponíveis |
 | `MATOBRA_EMITIR_PROPOSTA` | Criar o dossier interno da proposta |
 
 Fora de âmbito: alterar ou anular uma proposta já emitida, emitir documentos de faturação, criar artigos no catálogo e lançar movimentos de stock. O artigo em falta fica identificado na linha para análise posterior no PHC. A proposta não cria a ficha de artigo.
@@ -148,7 +148,23 @@ A ficha de artigo é a tabela `st`. A referência é `st.ref`.
 
 ### 6.1 Consulta
 
-O pedido leva uma ou mais referências. A comparação ignora espaços nas extremidades e maiúsculas. Cada referência pedida aparece na resposta, encontrada ou não. Uma referência em falta não é um erro da consulta.
+O pedido leva uma ou mais referências, ou vai vazio para obter o catálogo.
+
+O pedido está vazio quando não traz nenhum elemento `referencia` com texto depois de removidos os espaços. Servem os dois formatos:
+
+```xml
+<consultaArtigos versao="1.0"/>
+```
+
+```xml
+<consultaArtigos versao="1.0">
+  <referencias/>
+</consultaArtigos>
+```
+
+Nesse caso a resposta lista todas as referências disponíveis: registos de `st` com `ref` preenchida e que não estejam inativos (`st.inactivo = 0`, quando a coluna existir na instalação). A ordem é a da referência. Cada elemento `artigo` vem com `encontrado=true`, `referenciaPedida` igual a `referencia`, a designação (`st.design`), a unidade, o indicador `usaLote` e o preço da tabela 1 do artigo. `G00001` entra nesta lista quando existir em `st`. O elemento `total` indica quantas referências foram devolvidas.
+
+Quando o pedido traz referências, a comparação ignora espaços nas extremidades e maiúsculas. Cada referência pedida aparece na resposta, encontrada ou não. Uma referência em falta não é um erro da consulta.
 
 Quando o artigo existe, a resposta inclui a referência tal como está gravada em `st.ref`, a designação (`st.design`), a unidade, o indicador `usaLote` e o preço de tabela aplicável. A emissão usa essa referência exata.
 
@@ -311,6 +327,43 @@ Resposta quando não existe:
 ```
 
 A segunda referência, na emissão, vai como `G00001` com designação própria.
+
+Pedido vazio, para receber todas as referências disponíveis:
+
+```xml
+<?xml version="1.0" encoding="UTF-8"?>
+<consultaArtigos versao="1.0"/>
+```
+
+A resposta seguinte ilustra a forma. Na instalação, `artigos` contém todas as referências disponíveis e `total` é o número real de fichas.
+
+```xml
+<?xml version="1.0" encoding="UTF-8"?>
+<consultaArtigosResposta versao="1.0">
+  <sucesso>true</sucesso>
+  <total>2</total>
+  <artigos>
+    <artigo>
+      <referenciaPedida>G00001</referenciaPedida>
+      <encontrado>true</encontrado>
+      <referencia>G00001</referencia>
+      <designacao>Artigo genérico para análise</designacao>
+      <unidade>UN</unidade>
+      <usaLote>false</usaLote>
+      <preco>0</preco>
+    </artigo>
+    <artigo>
+      <referenciaPedida>MAT-100</referenciaPedida>
+      <encontrado>true</encontrado>
+      <referencia>MAT-100</referencia>
+      <designacao>Perfil de alumínio 40 mm</designacao>
+      <unidade>MT</unidade>
+      <usaLote>true</usaLote>
+      <preco>15.50</preco>
+    </artigo>
+  </artigos>
+</consultaArtigosResposta>
+```
 
 ### 8.3 Emissão com contacto existente e linhas mistas
 
@@ -565,7 +618,7 @@ O conteúdo comparado é o XML canónico: elementos na ordem do esquema, sem esp
 
 1. Consulta por NIF existente devolve um contacto com `numero`, `nome`, `morada`, `codigoPostal` e `nif`.
 2. Consulta por NIF inexistente devolve `encontrado=false`.
-3. Consulta de uma referência existente e de uma inexistente devolve as duas situações no mesmo pedido.
+3. Consulta com referências devolve cada uma, encontrada ou não. Consulta sem referências devolve todas as referências disponíveis, com `encontrado=true`.
 4. Emissão com `numero` cria o dossier ligado a esse contacto e devolve `obrano` e `bostamp`.
 5. Emissão sem `numero`, com nome, morada, localidade, código postal e NIF, cria a ficha e o dossier, e devolve o `numero` novo.
 6. O dossier fica com data, responsável, telefone ou email, e utilizador de atendimento.
