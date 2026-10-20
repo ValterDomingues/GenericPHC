@@ -11,6 +11,12 @@
       <unidade>UN</unidade>
       <usaLote>false</usaLote>
       <preco>0</preco>
+      <referenciaFornecedor></referenciaFornecedor>
+      <nomeFornecedor></nomeFornecedor>
+      <familia></familia>
+      <nomeFamilia></nomeFamilia>
+      <subfamilia></subfamilia>
+      <marca></marca>
     </artigo>
     <artigo>
       <referenciaPedida>MAT-100</referenciaPedida>
@@ -20,6 +26,12 @@
       <unidade>MT</unidade>
       <usaLote>true</usaLote>
       <preco>15.50</preco>
+      <referenciaFornecedor>FOR-100</referenciaFornecedor>
+      <nomeFornecedor>Alumínios do Norte Lda</nomeFornecedor>
+      <familia>PERFIL</familia>
+      <nomeFamilia>Perfis de alumínio</nomeFamilia>
+      <subfamilia>40MM</subfamilia>
+      <marca>Matobra</marca>
     </artigo>
   </artigos>
 </consultaArtigosResposta>

@@ -193,11 +193,20 @@ O pedido de catálogo não traz nenhum elemento `referencia` com texto depois de
 
 Nesse caso a resposta lista as referências disponíveis introduzidas ou alteradas depois de `alteradoDesde`: registos de `st` com `ref` preenchida, não inativos (`st.inactivo = 0`, quando a coluna existir na instalação), em que `ousrdata`/`ousrhora` ou `usrdata`/`usrhora` é posterior ao instante pedido. Hora em falta conta como `00:00:00`. O instante indicado fica de fora. A hora é local, em Lisboa, no formato `AAAA-MM-DDThh:mm:ss`, sem fuso. A primeira carga pode usar `1900-01-01T00:00:00`. Sem `alteradoDesde`, ou com valor ilegível, o endpoint não devolve o catálogo.
 
-A ordem é a da referência. Cada elemento `artigo` vem com `encontrado=true`, `referenciaPedida` igual a `referencia`, a designação (`st.design`), a unidade, o indicador `usaLote` e o preço da tabela 1 do artigo. `G00001` entra nesta lista quando existir em `st` e cumprir o filtro. O elemento `total` indica quantas referências foram devolvidas.
+A ordem é a da referência. Cada elemento `artigo` com `encontrado=true` traz a referência tal como está gravada em `st.ref`, a designação (`st.design`), a unidade, o indicador `usaLote`, o preço da tabela 1 e os dados do quadro seguinte. `G00001` entra nesta lista quando existir em `st` e cumprir o filtro. O elemento `total` indica quantas referências foram devolvidas.
+
+| Elemento | Origem no PHC | Conteúdo |
+|---|---|---|
+| `referenciaFornecedor` | `st.forref` | Referência do artigo no fornecedor habitual. Vazio se a ficha não a tiver |
+| `nomeFornecedor` | `fl.nome` | Nome do fornecedor habitual. O número está em `st.fornecedor` e a ficha é a da tabela `fl` com esse número e estabelecimento 0. Vazio se o artigo não tiver fornecedor habitual |
+| `familia` | `st.familia` | Código da família do artigo |
+| `nomeFamilia` | `st.faminome` | Designação da família |
+| `subfamilia` | Coluna de `st` configurada na Matobra como subfamília | Valor da subfamília. Vazio se o artigo não a tiver |
+| `marca` | Coluna de `st` configurada na Matobra como marca | Valor da marca. No PHC este título corresponde, por defeito, a `st.usr1` |
 
 Quando o pedido traz referências, `alteradoDesde` não se envia e o endpoint não filtra por data. A comparação ignora espaços nas extremidades e maiúsculas. Cada referência pedida aparece na resposta, encontrada ou não. Uma referência em falta não é um erro da consulta.
 
-Quando o artigo existe, a resposta inclui a referência tal como está gravada em `st.ref`, a designação (`st.design`), a unidade, o indicador `usaLote` e o preço de tabela aplicável. A emissão usa essa referência exata.
+Quando o artigo existe, a resposta inclui os mesmos elementos do quadro, com o preço de tabela aplicável ao contacto quando a consulta o puder determinar. A emissão usa a referência exata devolvida em `referencia`. Uma referência não encontrada traz só `referenciaPedida` e `encontrado=false`.
 
 `usaLote` é verdadeiro quando a ficha do artigo está configurada para lotes.
 
@@ -444,6 +453,12 @@ A resposta seguinte ilustra a forma. Na instalação, `contactos` contém as fic
       <unidade>MT</unidade>
       <usaLote>true</usaLote>
       <preco>15.50</preco>
+      <referenciaFornecedor>FOR-100</referenciaFornecedor>
+      <nomeFornecedor>Alumínios do Norte Lda</nomeFornecedor>
+      <familia>PERFIL</familia>
+      <nomeFamilia>Perfis de alumínio</nomeFamilia>
+      <subfamilia>40MM</subfamilia>
+      <marca>Matobra</marca>
     </artigo>
     <artigo>
       <referenciaPedida>ESPECIAL-1200</referenciaPedida>
@@ -480,6 +495,12 @@ A resposta seguinte ilustra a forma. Na instalação, `artigos` contém as refer
       <unidade>UN</unidade>
       <usaLote>false</usaLote>
       <preco>0</preco>
+      <referenciaFornecedor></referenciaFornecedor>
+      <nomeFornecedor></nomeFornecedor>
+      <familia></familia>
+      <nomeFamilia></nomeFamilia>
+      <subfamilia></subfamilia>
+      <marca></marca>
     </artigo>
     <artigo>
       <referenciaPedida>MAT-100</referenciaPedida>
@@ -489,6 +510,12 @@ A resposta seguinte ilustra a forma. Na instalação, `artigos` contém as refer
       <unidade>MT</unidade>
       <usaLote>true</usaLote>
       <preco>15.50</preco>
+      <referenciaFornecedor>FOR-100</referenciaFornecedor>
+      <nomeFornecedor>Alumínios do Norte Lda</nomeFornecedor>
+      <familia>PERFIL</familia>
+      <nomeFamilia>Perfis de alumínio</nomeFamilia>
+      <subfamilia>40MM</subfamilia>
+      <marca>Matobra</marca>
     </artigo>
   </artigos>
 </consultaArtigosResposta>
@@ -738,6 +765,8 @@ O conteúdo comparado é o XML canónico: elementos na ordem do esquema, sem esp
 | IVA de `G00001` | |
 | Preço do XML sem IVA | Sim, salvo configuração contrária do dossier |
 | Índice único em `u_idorig` | |
+| Coluna de `st` usada como subfamília | |
+| Coluna de `st` usada como marca | Por defeito `st.usr1`, se o título do campo na instalação for Marca |
 
 ## 13. Segurança
 
@@ -751,7 +780,7 @@ O conteúdo comparado é o XML canónico: elementos na ordem do esquema, sem esp
 
 1. Consulta por NIF, email, telefone ou número interno existente devolve a ficha, com `numero`, `nome`, `morada`, `codigoPostal` e `nif`.
 2. Consulta sem correspondência devolve `encontrado=false`. Consulta de contactos sem parâmetros, com `alteradoDesde`, devolve os contactos introduzidos ou alterados depois desse instante.
-3. Consulta com referências devolve cada uma, encontrada ou não. Consulta de artigos sem referências, com `alteradoDesde`, devolve as referências disponíveis introduzidas ou alteradas depois desse instante.
+3. Consulta com referências devolve cada uma, encontrada ou não. Quando existe, a resposta inclui referência do fornecedor habitual, nome desse fornecedor, família, subfamília e marca. Consulta de artigos sem referências, com `alteradoDesde`, devolve as referências disponíveis introduzidas ou alteradas depois desse instante, com os mesmos dados.
 4. Emissão com `numero` cria o dossier ligado a esse contacto e devolve `obrano` e `bostamp`.
 5. Emissão sem `numero`, com nome, morada, localidade, código postal e NIF, cria a ficha e o dossier, e devolve o `numero` novo.
 6. O dossier fica com data, responsável, telefone ou email, e utilizador de atendimento.

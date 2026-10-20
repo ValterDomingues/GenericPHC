@@ -10,6 +10,12 @@
       <unidade>MT</unidade>
       <usaLote>true</usaLote>
       <preco>15.50</preco>
+      <referenciaFornecedor>FOR-100</referenciaFornecedor>
+      <nomeFornecedor>Alumínios do Norte Lda</nomeFornecedor>
+      <familia>PERFIL</familia>
+      <nomeFamilia>Perfis de alumínio</nomeFamilia>
+      <subfamilia>40MM</subfamilia>
+      <marca>Matobra</marca>
     </artigo>
     <artigo>
       <referenciaPedida>ESPECIAL-1200</referenciaPedida>
