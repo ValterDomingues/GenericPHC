@@ -201,8 +201,8 @@ A ordem é a da referência. Cada elemento `artigo` com `encontrado=true` traz a
 | `nomeFornecedor` | `fl.nome` | Nome do fornecedor habitual. O número está em `st.fornecedor` e a ficha é a da tabela `fl` com esse número e estabelecimento 0. Vazio se o artigo não tiver fornecedor habitual |
 | `familia` | `st.familia` | Código da família do artigo |
 | `nomeFamilia` | `st.faminome` | Designação da família |
-| `subfamilia` | Coluna de `st` configurada na Matobra como subfamília | Valor da subfamília. Vazio se o artigo não a tiver |
-| `marca` | Coluna de `st` configurada na Matobra como marca | Valor da marca. No PHC este título corresponde, por defeito, a `st.usr1` |
+| `subfamilia` | `st.usr2` | Subfamília do artigo. Vazio se a ficha não a tiver |
+| `marca` | `st.usr1` | Marca do artigo. Vazio se a ficha não a tiver |
 
 Quando o pedido traz referências, `alteradoDesde` não se envia e o endpoint não filtra por data. A comparação ignora espaços nas extremidades e maiúsculas. Cada referência pedida aparece na resposta, encontrada ou não. Uma referência em falta não é um erro da consulta.
 
@@ -765,8 +765,6 @@ O conteúdo comparado é o XML canónico: elementos na ordem do esquema, sem esp
 | IVA de `G00001` | |
 | Preço do XML sem IVA | Sim, salvo configuração contrária do dossier |
 | Índice único em `u_idorig` | |
-| Coluna de `st` usada como subfamília | |
-| Coluna de `st` usada como marca | Por defeito `st.usr1`, se o título do campo na instalação for Marca |
 
 ## 13. Segurança
 
