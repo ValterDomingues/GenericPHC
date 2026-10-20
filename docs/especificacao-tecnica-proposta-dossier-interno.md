@@ -89,24 +89,36 @@ A ficha de contacto no PHC CS é a tabela `cl`. A chave técnica é `cl.no` + `c
 
 ### 5.1 Consulta
 
-A consulta aceita quatro parâmetros de pesquisa: `nif`, `email`, `telefone` e `numero` (número interno do PHC, `cl.no`). `estabelecimento` só acompanha `numero`.
-
-O pedido está vazio quando, depois de removidos os espaços, nenhum destes quatro parâmetros tem conteúdo. O pedido seguinte pede o catálogo:
+O pedido é sempre o mesmo. Traz uma tag para cada parâmetro, pela ordem `nif`, `email`, `telefone`, `numero` e `estabelecimento`. A tag vai vazia quando o software externo não tem esse dado. O software externo não escolhe o critério: envia o pedido e o endpoint decide qual parâmetro usar.
 
 ```xml
-<consultaContacto versao="1.0"/>
+<consultaContacto versao="1.0">
+  <nif></nif>
+  <email></email>
+  <telefone></telefone>
+  <numero></numero>
+  <estabelecimento></estabelecimento>
+</consultaContacto>
 ```
 
-`estabelecimento` sozinho não chega para filtrar: sem `nif`, `email`, `telefone` e `numero`, a resposta é o catálogo de todos os contactos da tabela `cl`, ativos e inativos, ordenados por `numero` e `estabelecimento`. Cada ficha traz `ativo`. O elemento `total` é o número de contactos devolvidos. `encontrado` é verdadeiro quando `total` é maior que zero.
+O endpoint escolhe um único parâmetro, nesta ordem, e ignora os restantes:
 
-Quando há parâmetros, todos os que vierem preenchidos aplicam-se em simultâneo.
+1. `numero`, quando a tag tem conteúdo. `estabelecimento` só entra neste caso. Vazio ou `0` em `estabelecimento` devolve todos os estabelecimentos desse número.
+2. `nif`, quando `numero` está vazio e `nif` tem conteúdo.
+3. `email`, quando os anteriores estão vazios e `email` tem conteúdo.
+4. `telefone`, quando os anteriores estão vazios e `telefone` tem conteúdo.
+5. Catálogo, quando as quatro tags estão vazias.
 
-| Parâmetro | Critério |
+| Parâmetro escolhido | Critério |
 |---|---|
+| `numero` | `cl.no`. Com `estabelecimento` preenchido e diferente de zero, também `cl.estab` |
 | `nif` | `cl.ncont` igual ao NIF, sem espaços. Nove dígitos e dígito de controlo válido (módulo 11). `999999990` não é aceite |
 | `email` | `cl.email` igual ao valor, sem espaços nas extremidades e sem distinguir maiúsculas |
-| `telefone` | Os dígitos do valor coincidem com os dígitos de `cl.telefone` ou de `cl.tlmvl`. O parâmetro tem de conter pelo menos 6 dígitos |
-| `numero` | `cl.no` igual ao número. Com `estabelecimento`, também `cl.estab`. Sem `estabelecimento`, devolve todos os estabelecimentos desse número |
+| `telefone` | Os dígitos do valor coincidem com os dígitos de `cl.telefone` ou de `cl.tlmvl`. A tag tem de conter pelo menos 6 dígitos |
+
+O valor do parâmetro escolhido é validado. Se for inválido, a resposta traz o código de erro correspondente e o endpoint não passa ao parâmetro seguinte. As outras tags, mesmo preenchidas, não entram na pesquisa.
+
+No catálogo, a resposta inclui todos os contactos da tabela `cl`, ativos e inativos, ordenados por `numero` e `estabelecimento`. Cada ficha traz `ativo`. O elemento `total` é o número de contactos devolvidos. `encontrado` é verdadeiro quando `total` é maior que zero.
 
 Uma pesquisa sem correspondência é um resultado válido: `sucesso=true`, `encontrado=false`, `total=0`. Não é um erro de NIF nem de número.
 
@@ -257,12 +269,16 @@ Os exemplos completos estão em `docs/exemplos/`. O esquema estrutural está em 
 
 ### 8.1 Consulta de contacto
 
-Pedido por NIF:
+Pedido com NIF. As outras tags vão no mesmo pedido e ficam vazias. O endpoint usa o NIF porque `numero` está vazio:
 
 ```xml
 <?xml version="1.0" encoding="UTF-8"?>
 <consultaContacto versao="1.0">
   <nif>501964843</nif>
+  <email></email>
+  <telefone></telefone>
+  <numero></numero>
+  <estabelecimento></estabelecimento>
 </consultaContacto>
 ```
 
@@ -305,34 +321,52 @@ Resposta quando não existe:
 
 `sucesso=false` reserva-se para pedido inválido, por exemplo NIF mal formado, email sem `@` ou telefone com menos de 6 dígitos. Não existir contacto é um resultado válido, com `sucesso=true` e `encontrado=false`.
 
-Os outros parâmetros de pesquisa usam o mesmo elemento de pedido. Exemplos:
+O mesmo pedido, com outra tag preenchida. Em cada caso o endpoint escolhe o primeiro parâmetro com conteúdo:
 
 ```xml
 <?xml version="1.0" encoding="UTF-8"?>
 <consultaContacto versao="1.0">
+  <nif></nif>
   <email>geral@oficinasdotejo.pt</email>
+  <telefone></telefone>
+  <numero></numero>
+  <estabelecimento></estabelecimento>
 </consultaContacto>
 ```
 
 ```xml
 <?xml version="1.0" encoding="UTF-8"?>
 <consultaContacto versao="1.0">
+  <nif></nif>
+  <email></email>
   <telefone>+351 210 000 000</telefone>
+  <numero></numero>
+  <estabelecimento></estabelecimento>
 </consultaContacto>
 ```
 
 ```xml
 <?xml version="1.0" encoding="UTF-8"?>
 <consultaContacto versao="1.0">
+  <nif></nif>
+  <email></email>
+  <telefone></telefone>
   <numero>12045</numero>
+  <estabelecimento></estabelecimento>
 </consultaContacto>
 ```
 
-Pedido vazio, para receber o catálogo de todos os contactos:
+Pedido com todas as tags vazias. O endpoint devolve o catálogo de todos os contactos:
 
 ```xml
 <?xml version="1.0" encoding="UTF-8"?>
-<consultaContacto versao="1.0"/>
+<consultaContacto versao="1.0">
+  <nif></nif>
+  <email></email>
+  <telefone></telefone>
+  <numero></numero>
+  <estabelecimento></estabelecimento>
+</consultaContacto>
 ```
 
 A resposta seguinte ilustra a forma. Na instalação, `contactos` contém todas as fichas e `total` é o número real de contactos.

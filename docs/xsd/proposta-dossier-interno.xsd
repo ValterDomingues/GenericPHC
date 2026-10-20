@@ -112,27 +112,43 @@
   <xs:element name="consultaContacto">
     <xs:complexType>
       <xs:sequence>
-        <xs:element name="nif" type="nif" minOccurs="0"/>
-        <xs:element name="email" minOccurs="0">
+        <xs:element name="nif">
           <xs:simpleType>
             <xs:restriction base="xs:string">
-              <xs:minLength value="3"/>
+              <xs:pattern value="|[0-9]{9}"/>
+            </xs:restriction>
+          </xs:simpleType>
+        </xs:element>
+        <xs:element name="email">
+          <xs:simpleType>
+            <xs:restriction base="xs:string">
               <xs:maxLength value="100"/>
-              <xs:pattern value="[^@\s]+@[^@\s]+\.[^@\s]+"/>
+              <xs:pattern value="|[^@\s]+@[^@\s]+\.[^@\s]+"/>
             </xs:restriction>
           </xs:simpleType>
         </xs:element>
-        <xs:element name="telefone" minOccurs="0">
+        <xs:element name="telefone">
           <xs:simpleType>
             <xs:restriction base="xs:string">
-              <xs:minLength value="6"/>
               <xs:maxLength value="60"/>
-              <xs:pattern value="[0-9+() .\-]+"/>
+              <xs:pattern value="|[0-9+() .\-]{6,60}"/>
             </xs:restriction>
           </xs:simpleType>
         </xs:element>
-        <xs:element name="numero" type="xs:positiveInteger" minOccurs="0"/>
-        <xs:element name="estabelecimento" type="xs:nonNegativeInteger" minOccurs="0"/>
+        <xs:element name="numero">
+          <xs:simpleType>
+            <xs:restriction base="xs:string">
+              <xs:pattern value="|0|[1-9][0-9]*"/>
+            </xs:restriction>
+          </xs:simpleType>
+        </xs:element>
+        <xs:element name="estabelecimento">
+          <xs:simpleType>
+            <xs:restriction base="xs:string">
+              <xs:pattern value="|[0-9]+"/>
+            </xs:restriction>
+          </xs:simpleType>
+        </xs:element>
       </xs:sequence>
       <xs:attribute name="versao" type="versao" use="required"/>
     </xs:complexType>
