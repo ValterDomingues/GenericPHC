@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<emitirProposta versao="1.0">
+  <idOrigem>CRM-2026-00045</idOrigem>
+  <data>2026-10-20</data>
+  <contacto>
+    <numero>12045</numero>
+    <estabelecimento>0</estabelecimento>
+    <nome>Oficinas do Tejo Lda</nome>
+    <morada>Rua das Flores 10</morada>
+    <localidade>Lisboa</localidade>
+    <codigoPostal>1200-001</codigoPostal>
+    <nif>501964843</nif>
+  </contacto>
+  <responsavel>
+    <nome>Ana Silva</nome>
+    <telefone>+351210000000</telefone>
+    <email>ana.silva@oficinasdotejo.pt</email>
+  </responsavel>
+  <atendimento>
+    <numero>12</numero>
+  </atendimento>
+  <observacoes>Entregar na obra até sexta.</observacoes>
+  <requisicao>REQ-778</requisicao>
+  <obra>OB-2026-014</obra>
+  <descarga>
+    <morada>Parque industrial, lote 4</morada>
+    <codigoPostal>2660-021</codigoPostal>
+    <localidade>Loures</localidade>
+    <latitude>38.830123</latitude>
+    <longitude>-9.168456</longitude>
+  </descarga>
+  <linhas>
+    <linha>
+      <referencia>MAT-100</referencia>
+      <quantidade>12.5</quantidade>
+      <preco>15.50</preco>
+      <desconto1>10</desconto1>
+      <desconto2>5</desconto2>
+      <lote>L2026-01</lote>
+    </linha>
+    <linha>
+      <referencia>G00001</referencia>
+      <designacao>Suporte especial a fabricar, medida 1200x300</designacao>
+      <quantidade>1</quantidade>
+    </linha>
+    <linha>
+      <referencia>TXENERG</referencia>
+      <designacao>Taxa energética de revestimento</designacao>
+      <quantidade>12.5</quantidade>
+      <preco>1.50</preco>
+    </linha>
+  </linhas>
+</emitirProposta>

@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<consultaContactoResposta versao="1.0">
+  <sucesso>true</sucesso>
+  <encontrado>false</encontrado>
+  <total>0</total>
+  <contactos/>
+</consultaContactoResposta>

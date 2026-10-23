@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<consultaContactoResposta versao="1.0">
+  <sucesso>true</sucesso>
+  <encontrado>true</encontrado>
+  <total>1</total>
+  <contactos>
+    <contacto>
+      <numero>12045</numero>
+      <estabelecimento>0</estabelecimento>
+      <nome>Oficinas do Tejo Lda</nome>
+      <morada>Rua das Flores 10</morada>
+      <localidade>Lisboa</localidade>
+      <codigoPostal>1200-001</codigoPostal>
+      <nif>501964843</nif>
+      <email>geral@oficinasdotejo.pt</email>
+      <telefone>210000000</telefone>
+      <ativo>true</ativo>
+    </contacto>
+  </contactos>
+</consultaContactoResposta>

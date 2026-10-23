@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<emitirPropostaResposta versao="1.0">
+  <sucesso>true</sucesso>
+  <idOrigem>CRM-2026-00045</idOrigem>
+  <duplicado>false</duplicado>
+  <numeroContacto>12045</numeroContacto>
+  <estabelecimento>0</estabelecimento>
+  <dossier>
+    <ndos>15</ndos>
+    <boano>2026</boano>
+    <obrano>482</obrano>
+    <dataDossier>2026-10-23</dataDossier>
+    <bostamp>BOstampaDevolverPeloPHC</bostamp>
+  </dossier>
+</emitirPropostaResposta>

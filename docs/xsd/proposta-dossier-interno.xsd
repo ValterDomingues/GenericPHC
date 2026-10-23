@@ -1,0 +1,560 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema" elementFormDefault="qualified">
+
+  <xs:simpleType name="versao">
+    <xs:restriction base="xs:string">
+      <xs:enumeration value="1.0"/>
+    </xs:restriction>
+  </xs:simpleType>
+
+  <xs:simpleType name="nif">
+    <xs:restriction base="xs:string">
+      <xs:pattern value="[0-9]{9}"/>
+    </xs:restriction>
+  </xs:simpleType>
+
+  <xs:simpleType name="codigoPostal">
+    <xs:restriction base="xs:string">
+      <xs:pattern value="[0-9]{4}-[0-9]{3}"/>
+    </xs:restriction>
+  </xs:simpleType>
+
+  <xs:simpleType name="idOrigem">
+    <xs:restriction base="xs:string">
+      <xs:minLength value="1"/>
+      <xs:maxLength value="40"/>
+      <xs:pattern value="[A-Za-z0-9._-]+"/>
+    </xs:restriction>
+  </xs:simpleType>
+
+  <xs:simpleType name="referencia">
+    <xs:restriction base="xs:string">
+      <xs:minLength value="1"/>
+      <xs:maxLength value="18"/>
+    </xs:restriction>
+  </xs:simpleType>
+
+  <xs:simpleType name="alteradoDesde">
+    <xs:restriction base="xs:string">
+      <xs:pattern value="[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}"/>
+    </xs:restriction>
+  </xs:simpleType>
+
+  <xs:simpleType name="texto55">
+    <xs:restriction base="xs:string">
+      <xs:minLength value="1"/>
+      <xs:maxLength value="55"/>
+    </xs:restriction>
+  </xs:simpleType>
+
+  <xs:simpleType name="texto40">
+    <xs:restriction base="xs:string">
+      <xs:minLength value="1"/>
+      <xs:maxLength value="40"/>
+    </xs:restriction>
+  </xs:simpleType>
+
+  <xs:simpleType name="quantidade">
+    <xs:restriction base="xs:decimal">
+      <xs:fractionDigits value="4"/>
+      <xs:minExclusive value="0"/>
+    </xs:restriction>
+  </xs:simpleType>
+
+  <xs:simpleType name="preco">
+    <xs:restriction base="xs:decimal">
+      <xs:fractionDigits value="6"/>
+      <xs:minInclusive value="0"/>
+    </xs:restriction>
+  </xs:simpleType>
+
+  <xs:simpleType name="percentagem">
+    <xs:restriction base="xs:decimal">
+      <xs:fractionDigits value="2"/>
+      <xs:minInclusive value="0"/>
+      <xs:maxInclusive value="100"/>
+    </xs:restriction>
+  </xs:simpleType>
+
+  <xs:simpleType name="latitude">
+    <xs:restriction base="xs:decimal">
+      <xs:fractionDigits value="6"/>
+      <xs:minInclusive value="-90"/>
+      <xs:maxInclusive value="90"/>
+    </xs:restriction>
+  </xs:simpleType>
+
+  <xs:simpleType name="longitude">
+    <xs:restriction base="xs:decimal">
+      <xs:fractionDigits value="6"/>
+      <xs:minInclusive value="-180"/>
+      <xs:maxInclusive value="180"/>
+    </xs:restriction>
+  </xs:simpleType>
+
+  <xs:complexType name="erro">
+    <xs:sequence>
+      <xs:element name="codigo" type="xs:string"/>
+      <xs:element name="mensagem" type="xs:string"/>
+      <xs:element name="elemento" type="xs:string" minOccurs="0"/>
+    </xs:sequence>
+  </xs:complexType>
+
+  <xs:complexType name="contactoFicha">
+    <xs:sequence>
+      <xs:element name="numero" type="xs:positiveInteger"/>
+      <xs:element name="estabelecimento" type="xs:nonNegativeInteger"/>
+      <xs:element name="nome" type="texto55"/>
+      <xs:element name="morada" type="texto55"/>
+      <xs:element name="localidade" type="texto55"/>
+      <xs:element name="codigoPostal" type="codigoPostal"/>
+      <xs:element name="nif" type="xs:string" minOccurs="0"/>
+      <xs:element name="email" type="xs:string" minOccurs="0"/>
+      <xs:element name="telefone" type="xs:string" minOccurs="0"/>
+      <xs:element name="ativo" type="xs:boolean"/>
+    </xs:sequence>
+  </xs:complexType>
+
+  <xs:element name="consultaSessao">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element name="numero">
+          <xs:simpleType>
+            <xs:restriction base="xs:string">
+              <xs:pattern value="|0|[1-9][0-9]*"/>
+            </xs:restriction>
+          </xs:simpleType>
+        </xs:element>
+        <xs:element name="nome">
+          <xs:simpleType>
+            <xs:restriction base="xs:string">
+              <xs:maxLength value="55"/>
+            </xs:restriction>
+          </xs:simpleType>
+        </xs:element>
+        <xs:element name="iniciais">
+          <xs:simpleType>
+            <xs:restriction base="xs:string">
+              <xs:maxLength value="10"/>
+            </xs:restriction>
+          </xs:simpleType>
+        </xs:element>
+        <xs:element name="telemovel">
+          <xs:simpleType>
+            <xs:restriction base="xs:string">
+              <xs:maxLength value="60"/>
+              <xs:pattern value="|[0-9+() .\-]{6,60}"/>
+            </xs:restriction>
+          </xs:simpleType>
+        </xs:element>
+        <xs:element name="email">
+          <xs:simpleType>
+            <xs:restriction base="xs:string">
+              <xs:maxLength value="100"/>
+              <xs:pattern value="|[^@\s]+@[^@\s]+\.[^@\s]+"/>
+            </xs:restriction>
+          </xs:simpleType>
+        </xs:element>
+      </xs:sequence>
+      <xs:attribute name="versao" type="versao" use="required"/>
+    </xs:complexType>
+  </xs:element>
+
+  <xs:element name="consultaSessaoResposta">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element name="sucesso" type="xs:boolean"/>
+        <xs:element name="total" type="xs:nonNegativeInteger" minOccurs="0"/>
+        <xs:element name="atendimentos" minOccurs="0">
+          <xs:complexType>
+            <xs:sequence>
+              <xs:element name="atendimento" minOccurs="0" maxOccurs="unbounded">
+                <xs:complexType>
+                  <xs:sequence>
+                    <xs:element name="numero" type="xs:positiveInteger"/>
+                    <xs:element name="nome" type="xs:string"/>
+                    <xs:element name="iniciais" type="xs:string" minOccurs="0"/>
+                    <xs:element name="telemovel" type="xs:string" minOccurs="0"/>
+                    <xs:element name="email" type="xs:string" minOccurs="0"/>
+                  </xs:sequence>
+                </xs:complexType>
+              </xs:element>
+            </xs:sequence>
+          </xs:complexType>
+        </xs:element>
+        <xs:element name="erros" minOccurs="0">
+          <xs:complexType>
+            <xs:sequence>
+              <xs:element name="erro" type="erro" maxOccurs="unbounded"/>
+            </xs:sequence>
+          </xs:complexType>
+        </xs:element>
+      </xs:sequence>
+      <xs:attribute name="versao" type="versao" use="required"/>
+    </xs:complexType>
+  </xs:element>
+
+  <xs:element name="consultaContacto">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element name="nif">
+          <xs:simpleType>
+            <xs:restriction base="xs:string">
+              <xs:pattern value="|[0-9]{9}"/>
+            </xs:restriction>
+          </xs:simpleType>
+        </xs:element>
+        <xs:element name="email">
+          <xs:simpleType>
+            <xs:restriction base="xs:string">
+              <xs:maxLength value="100"/>
+              <xs:pattern value="|[^@\s]+@[^@\s]+\.[^@\s]+"/>
+            </xs:restriction>
+          </xs:simpleType>
+        </xs:element>
+        <xs:element name="telefone">
+          <xs:simpleType>
+            <xs:restriction base="xs:string">
+              <xs:maxLength value="60"/>
+              <xs:pattern value="|[0-9+() .\-]{6,60}"/>
+            </xs:restriction>
+          </xs:simpleType>
+        </xs:element>
+        <xs:element name="numero">
+          <xs:simpleType>
+            <xs:restriction base="xs:string">
+              <xs:pattern value="|0|[1-9][0-9]*"/>
+            </xs:restriction>
+          </xs:simpleType>
+        </xs:element>
+        <xs:element name="estabelecimento">
+          <xs:simpleType>
+            <xs:restriction base="xs:string">
+              <xs:pattern value="|[0-9]+"/>
+            </xs:restriction>
+          </xs:simpleType>
+        </xs:element>
+      </xs:sequence>
+      <xs:attribute name="versao" type="versao" use="required"/>
+    </xs:complexType>
+  </xs:element>
+
+  <xs:element name="consultaContactoResposta">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element name="sucesso" type="xs:boolean"/>
+        <xs:element name="encontrado" type="xs:boolean" minOccurs="0"/>
+        <xs:element name="total" type="xs:nonNegativeInteger" minOccurs="0"/>
+        <xs:element name="contactos" minOccurs="0">
+          <xs:complexType>
+            <xs:sequence>
+              <xs:element name="contacto" type="contactoFicha" minOccurs="0" maxOccurs="unbounded"/>
+            </xs:sequence>
+          </xs:complexType>
+        </xs:element>
+        <xs:element name="erros" minOccurs="0">
+          <xs:complexType>
+            <xs:sequence>
+              <xs:element name="erro" type="erro" maxOccurs="unbounded"/>
+            </xs:sequence>
+          </xs:complexType>
+        </xs:element>
+      </xs:sequence>
+      <xs:attribute name="versao" type="versao" use="required"/>
+    </xs:complexType>
+  </xs:element>
+
+  <xs:element name="catalogoContactos">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element name="alteradoDesde" type="alteradoDesde"/>
+      </xs:sequence>
+      <xs:attribute name="versao" type="versao" use="required"/>
+    </xs:complexType>
+  </xs:element>
+
+  <xs:element name="catalogoContactosResposta">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element name="sucesso" type="xs:boolean"/>
+        <xs:element name="total" type="xs:nonNegativeInteger" minOccurs="0"/>
+        <xs:element name="contactos" minOccurs="0">
+          <xs:complexType>
+            <xs:sequence>
+              <xs:element name="contacto" type="contactoFicha" minOccurs="0" maxOccurs="unbounded"/>
+            </xs:sequence>
+          </xs:complexType>
+        </xs:element>
+        <xs:element name="erros" minOccurs="0">
+          <xs:complexType>
+            <xs:sequence>
+              <xs:element name="erro" type="erro" maxOccurs="unbounded"/>
+            </xs:sequence>
+          </xs:complexType>
+        </xs:element>
+      </xs:sequence>
+      <xs:attribute name="versao" type="versao" use="required"/>
+    </xs:complexType>
+  </xs:element>
+
+  <xs:element name="criarContacto">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element name="nome" type="texto55"/>
+        <xs:element name="morada" type="texto55"/>
+        <xs:element name="localidade" type="texto55"/>
+        <xs:element name="codigoPostal" type="codigoPostal"/>
+        <xs:element name="nif" type="nif"/>
+        <xs:element name="email" minOccurs="0">
+          <xs:simpleType>
+            <xs:restriction base="xs:string">
+              <xs:maxLength value="100"/>
+              <xs:pattern value="[^@\s]+@[^@\s]+\.[^@\s]+"/>
+            </xs:restriction>
+          </xs:simpleType>
+        </xs:element>
+        <xs:element name="telefone" minOccurs="0">
+          <xs:simpleType>
+            <xs:restriction base="xs:string">
+              <xs:maxLength value="60"/>
+              <xs:pattern value="[0-9+() .\-]{6,60}"/>
+            </xs:restriction>
+          </xs:simpleType>
+        </xs:element>
+      </xs:sequence>
+      <xs:attribute name="versao" type="versao" use="required"/>
+    </xs:complexType>
+  </xs:element>
+
+  <xs:element name="criarContactoResposta">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element name="sucesso" type="xs:boolean"/>
+        <xs:element name="numero" type="xs:positiveInteger" minOccurs="0"/>
+        <xs:element name="estabelecimento" type="xs:nonNegativeInteger" minOccurs="0"/>
+        <xs:element name="erros" minOccurs="0">
+          <xs:complexType>
+            <xs:sequence>
+              <xs:element name="erro" type="erro" maxOccurs="unbounded"/>
+            </xs:sequence>
+          </xs:complexType>
+        </xs:element>
+      </xs:sequence>
+      <xs:attribute name="versao" type="versao" use="required"/>
+    </xs:complexType>
+  </xs:element>
+
+  <xs:element name="consultaArtigo">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element name="referencia" maxOccurs="unbounded">
+          <xs:simpleType>
+            <xs:restriction base="xs:string">
+              <xs:maxLength value="18"/>
+            </xs:restriction>
+          </xs:simpleType>
+        </xs:element>
+      </xs:sequence>
+      <xs:attribute name="versao" type="versao" use="required"/>
+    </xs:complexType>
+  </xs:element>
+
+  <xs:element name="catalogoArtigos">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element name="alteradoDesde" type="alteradoDesde"/>
+      </xs:sequence>
+      <xs:attribute name="versao" type="versao" use="required"/>
+    </xs:complexType>
+  </xs:element>
+
+  <xs:complexType name="artigoFicha">
+    <xs:sequence>
+      <xs:element name="referencia" type="referencia"/>
+      <xs:element name="designacao" type="xs:string"/>
+      <xs:element name="unidade" type="xs:string" minOccurs="0"/>
+      <xs:element name="usaLote" type="xs:boolean" minOccurs="0"/>
+      <xs:element name="preco" type="preco" minOccurs="0"/>
+      <xs:element name="referenciaFornecedor" type="xs:string" minOccurs="0"/>
+      <xs:element name="nomeFornecedor" type="xs:string" minOccurs="0"/>
+      <xs:element name="numeroFornecedor" type="xs:nonNegativeInteger" minOccurs="0"/>
+      <xs:element name="familia" type="xs:string" minOccurs="0"/>
+      <xs:element name="nomeFamilia" type="xs:string" minOccurs="0"/>
+      <xs:element name="subfamilia" type="xs:string" minOccurs="0"/>
+      <xs:element name="marca" type="xs:string" minOccurs="0"/>
+    </xs:sequence>
+  </xs:complexType>
+
+  <xs:element name="consultaArtigoResposta">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element name="sucesso" type="xs:boolean"/>
+        <xs:element name="encontrado" type="xs:boolean" minOccurs="0"/>
+        <xs:element name="total" type="xs:nonNegativeInteger" minOccurs="0"/>
+        <xs:element name="artigos" minOccurs="0">
+          <xs:complexType>
+            <xs:sequence>
+              <xs:element name="artigo" type="artigoFicha" minOccurs="0" maxOccurs="unbounded"/>
+            </xs:sequence>
+          </xs:complexType>
+        </xs:element>
+        <xs:element name="erros" minOccurs="0">
+          <xs:complexType>
+            <xs:sequence>
+              <xs:element name="erro" type="erro" maxOccurs="unbounded"/>
+            </xs:sequence>
+          </xs:complexType>
+        </xs:element>
+      </xs:sequence>
+      <xs:attribute name="versao" type="versao" use="required"/>
+    </xs:complexType>
+  </xs:element>
+
+  <xs:element name="catalogoArtigosResposta">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element name="sucesso" type="xs:boolean"/>
+        <xs:element name="total" type="xs:nonNegativeInteger" minOccurs="0"/>
+        <xs:element name="artigos" minOccurs="0">
+          <xs:complexType>
+            <xs:sequence>
+              <xs:element name="artigo" type="artigoFicha" minOccurs="0" maxOccurs="unbounded"/>
+            </xs:sequence>
+          </xs:complexType>
+        </xs:element>
+        <xs:element name="erros" minOccurs="0">
+          <xs:complexType>
+            <xs:sequence>
+              <xs:element name="erro" type="erro" maxOccurs="unbounded"/>
+            </xs:sequence>
+          </xs:complexType>
+        </xs:element>
+      </xs:sequence>
+      <xs:attribute name="versao" type="versao" use="required"/>
+    </xs:complexType>
+  </xs:element>
+
+  <xs:complexType name="contactoEmissao">
+    <xs:sequence>
+      <xs:element name="numero" type="xs:positiveInteger"/>
+      <xs:element name="estabelecimento" type="xs:nonNegativeInteger" minOccurs="0"/>
+      <xs:element name="nome" type="texto55"/>
+      <xs:element name="morada" type="texto55"/>
+      <xs:element name="localidade" type="texto55" minOccurs="0"/>
+      <xs:element name="codigoPostal" type="codigoPostal"/>
+      <xs:element name="nif" type="nif"/>
+    </xs:sequence>
+  </xs:complexType>
+
+  <xs:complexType name="responsavel">
+    <xs:sequence>
+      <xs:element name="nome" type="texto55"/>
+      <xs:element name="telefone" minOccurs="0">
+        <xs:simpleType>
+          <xs:restriction base="xs:string">
+            <xs:minLength value="1"/>
+            <xs:maxLength value="60"/>
+          </xs:restriction>
+        </xs:simpleType>
+      </xs:element>
+      <xs:element name="email" type="xs:string" minOccurs="0"/>
+    </xs:sequence>
+  </xs:complexType>
+
+  <xs:complexType name="descarga">
+    <xs:sequence>
+      <xs:element name="morada" type="texto55"/>
+      <xs:element name="codigoPostal" type="codigoPostal"/>
+      <xs:element name="localidade" type="texto55"/>
+      <xs:element name="latitude" type="latitude" minOccurs="0"/>
+      <xs:element name="longitude" type="longitude" minOccurs="0"/>
+    </xs:sequence>
+  </xs:complexType>
+
+  <xs:complexType name="linha">
+    <xs:sequence>
+      <xs:element name="referencia" type="referencia"/>
+      <xs:element name="designacao" minOccurs="0">
+        <xs:simpleType>
+          <xs:restriction base="xs:string">
+            <xs:minLength value="1"/>
+            <xs:maxLength value="240"/>
+          </xs:restriction>
+        </xs:simpleType>
+      </xs:element>
+      <xs:element name="quantidade" type="quantidade"/>
+      <xs:element name="preco" type="preco" minOccurs="0"/>
+      <xs:element name="desconto1" type="percentagem" minOccurs="0"/>
+      <xs:element name="desconto2" type="percentagem" minOccurs="0"/>
+      <xs:element name="lote" type="texto40" minOccurs="0"/>
+    </xs:sequence>
+  </xs:complexType>
+
+  <xs:element name="emitirProposta">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element name="idOrigem" type="idOrigem"/>
+        <xs:element name="data" type="xs:date"/>
+        <xs:element name="contacto" type="contactoEmissao"/>
+        <xs:element name="responsavel" type="responsavel"/>
+        <xs:element name="atendimento">
+          <xs:complexType>
+            <xs:sequence>
+              <xs:element name="numero" type="xs:positiveInteger"/>
+            </xs:sequence>
+          </xs:complexType>
+        </xs:element>
+        <xs:element name="observacoes" minOccurs="0">
+          <xs:simpleType>
+            <xs:restriction base="xs:string">
+              <xs:maxLength value="8000"/>
+            </xs:restriction>
+          </xs:simpleType>
+        </xs:element>
+        <xs:element name="requisicao" type="texto40" minOccurs="0"/>
+        <xs:element name="obra" type="texto40" minOccurs="0"/>
+        <xs:element name="descarga" type="descarga" minOccurs="0"/>
+        <xs:element name="linhas">
+          <xs:complexType>
+            <xs:sequence>
+              <xs:element name="linha" type="linha" maxOccurs="500"/>
+            </xs:sequence>
+          </xs:complexType>
+        </xs:element>
+      </xs:sequence>
+      <xs:attribute name="versao" type="versao" use="required"/>
+    </xs:complexType>
+  </xs:element>
+
+  <xs:element name="emitirPropostaResposta">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element name="sucesso" type="xs:boolean"/>
+        <xs:element name="idOrigem" type="idOrigem" minOccurs="0"/>
+        <xs:element name="duplicado" type="xs:boolean" minOccurs="0"/>
+        <xs:element name="numeroContacto" type="xs:positiveInteger" minOccurs="0"/>
+        <xs:element name="estabelecimento" type="xs:nonNegativeInteger" minOccurs="0"/>
+        <xs:element name="dossier" minOccurs="0">
+          <xs:complexType>
+            <xs:sequence>
+              <xs:element name="ndos" type="xs:positiveInteger"/>
+              <xs:element name="boano" type="xs:positiveInteger"/>
+              <xs:element name="obrano" type="xs:integer"/>
+              <xs:element name="dataDossier" type="xs:date"/>
+              <xs:element name="bostamp" type="xs:string"/>
+            </xs:sequence>
+          </xs:complexType>
+        </xs:element>
+        <xs:element name="erros" minOccurs="0">
+          <xs:complexType>
+            <xs:sequence>
+              <xs:element name="erro" type="erro" maxOccurs="unbounded"/>
+            </xs:sequence>
+          </xs:complexType>
+        </xs:element>
+      </xs:sequence>
+      <xs:attribute name="versao" type="versao" use="required"/>
+    </xs:complexType>
+  </xs:element>
+
+</xs:schema>

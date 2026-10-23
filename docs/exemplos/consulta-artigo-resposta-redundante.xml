@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<consultaArtigoResposta versao="1.0">
+  <sucesso>false</sucesso>
+  <erros>
+    <erro>
+      <codigo>ARTIGO_INFORMACAO_REDUNDANTE</codigo>
+      <mensagem>O pedido traz mais do que uma referência. Envie uma referência por pedido.</mensagem>
+      <elemento>consultaArtigo</elemento>
+    </erro>
+  </erros>
+</consultaArtigoResposta>

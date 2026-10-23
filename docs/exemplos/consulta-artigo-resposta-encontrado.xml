@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<consultaArtigoResposta versao="1.0">
+  <sucesso>true</sucesso>
+  <encontrado>true</encontrado>
+  <total>1</total>
+  <artigos>
+    <artigo>
+      <referencia>MAT-100</referencia>
+      <designacao>Perfil de alumínio 40 mm</designacao>
+      <unidade>M2</unidade>
+      <usaLote>true</usaLote>
+      <preco>15.50</preco>
+      <referenciaFornecedor>FOR-100</referenciaFornecedor>
+      <nomeFornecedor>Alumínios do Norte Lda</nomeFornecedor>
+      <numeroFornecedor>100</numeroFornecedor>
+      <familia>PERFIL</familia>
+      <nomeFamilia>Perfis de alumínio</nomeFamilia>
+      <subfamilia>40MM</subfamilia>
+      <marca>Matobra</marca>
+    </artigo>
+  </artigos>
+</consultaArtigoResposta>

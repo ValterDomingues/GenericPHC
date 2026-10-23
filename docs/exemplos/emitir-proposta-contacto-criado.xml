@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<emitirProposta versao="1.0">
+  <idOrigem>CRM-2026-00046</idOrigem>
+  <data>2026-10-20</data>
+  <contacto>
+    <numero>12046</numero>
+    <estabelecimento>0</estabelecimento>
+    <nome>Nova Metalomecânica Lda</nome>
+    <morada>Avenida da República 250</morada>
+    <localidade>Porto</localidade>
+    <codigoPostal>4000-123</codigoPostal>
+    <nif>509876323</nif>
+  </contacto>
+  <responsavel>
+    <nome>Rui Costa</nome>
+    <email>rui.costa@novametal.pt</email>
+  </responsavel>
+  <atendimento>
+    <numero>12</numero>
+  </atendimento>
+  <linhas>
+    <linha>
+      <referencia>G00001</referencia>
+      <designacao>Grade de proteção à medida da nave B</designacao>
+      <quantidade>3</quantidade>
+      <preco>480</preco>
+    </linha>
+  </linhas>
+</emitirProposta>
