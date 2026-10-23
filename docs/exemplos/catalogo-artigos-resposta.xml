@@ -1,11 +1,9 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<consultaArtigosResposta versao="1.0">
+<catalogoArtigosResposta versao="1.0">
   <sucesso>true</sucesso>
   <total>2</total>
   <artigos>
     <artigo>
-      <referenciaPedida>G00001</referenciaPedida>
-      <encontrado>true</encontrado>
       <referencia>G00001</referencia>
       <designacao>Artigo genérico para análise</designacao>
       <unidade>UN</unidade>
@@ -20,11 +18,9 @@
       <marca></marca>
     </artigo>
     <artigo>
-      <referenciaPedida>MAT-100</referenciaPedida>
-      <encontrado>true</encontrado>
       <referencia>MAT-100</referencia>
       <designacao>Perfil de alumínio 40 mm</designacao>
-      <unidade>MT</unidade>
+      <unidade>M2</unidade>
       <usaLote>true</usaLote>
       <preco>15.50</preco>
       <referenciaFornecedor>FOR-100</referenciaFornecedor>
@@ -36,4 +32,4 @@
       <marca>Matobra</marca>
     </artigo>
   </artigos>
-</consultaArtigosResposta>
+</catalogoArtigosResposta>

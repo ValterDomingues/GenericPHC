@@ -3,8 +3,10 @@
   <idOrigem>CRM-2026-00046</idOrigem>
   <data>2026-10-20</data>
   <contacto>
+    <numero>12046</numero>
+    <estabelecimento>0</estabelecimento>
     <nome>Nova Metalomecânica Lda</nome>
-    <morada>Avenida da Republica 250</morada>
+    <morada>Avenida da República 250</morada>
     <localidade>Porto</localidade>
     <codigoPostal>4000-123</codigoPostal>
     <nif>509876323</nif>

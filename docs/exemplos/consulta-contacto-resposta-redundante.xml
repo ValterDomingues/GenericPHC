@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<consultaContactoResposta versao="1.0">
+  <sucesso>false</sucesso>
+  <erros>
+    <erro>
+      <codigo>CONTACTO_INFORMACAO_REDUNDANTE</codigo>
+      <mensagem>O pedido traz mais do que um critério de pesquisa. Preencha apenas nif, email, telefone ou numero.</mensagem>
+      <elemento>consultaContacto</elemento>
+    </erro>
+  </erros>
+</consultaContactoResposta>

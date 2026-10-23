@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<criarContactoResposta versao="1.0">
+  <sucesso>false</sucesso>
+  <numero>12046</numero>
+  <estabelecimento>0</estabelecimento>
+  <erros>
+    <erro>
+      <codigo>CONTACTO_JA_EXISTE</codigo>
+      <mensagem>Já existe um contacto com o NIF 509876323.</mensagem>
+      <elemento>nif</elemento>
+    </erro>
+  </erros>
+</criarContactoResposta>

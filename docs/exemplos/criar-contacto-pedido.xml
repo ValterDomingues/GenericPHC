@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<criarContacto versao="1.0">
+  <nome>Nova Metalomecânica Lda</nome>
+  <morada>Avenida da República 250</morada>
+  <localidade>Porto</localidade>
+  <codigoPostal>4000-123</codigoPostal>
+  <nif>509876323</nif>
+  <email>rui.costa@novametal.pt</email>
+  <telefone>220000000</telefone>
+</criarContacto>

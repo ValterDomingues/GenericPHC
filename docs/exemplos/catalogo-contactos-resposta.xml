@@ -1,7 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<consultaContactoResposta versao="1.0">
+<catalogoContactosResposta versao="1.0">
   <sucesso>true</sucesso>
-  <encontrado>true</encontrado>
   <total>2</total>
   <contactos>
     <contacto>
@@ -29,4 +28,4 @@
       <ativo>true</ativo>
     </contacto>
   </contactos>
-</consultaContactoResposta>
+</catalogoContactosResposta>
